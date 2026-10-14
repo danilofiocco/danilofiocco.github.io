@@ -68,6 +68,7 @@ svg.i { width: 16px; height: 16px; flex: none }
 .tools { display: flex; gap: 8px; flex-wrap: wrap }
 .group h3 { font-family: var(--display); font-weight: 400; font-size: 18px; margin: 20px 0 6px }
 .row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px }
+.row.nothumb { grid-template-columns: minmax(0, 1fr) auto }
 .row.off { background: transparent; border-style: dashed }
 .row.off > :not(.r-act), .row.off .r-act > .btn { opacity: .5 }
 .r-name { font-weight: 800 }
@@ -88,7 +89,7 @@ svg.i { width: 16px; height: 16px; flex: none }
 .switch input:focus-visible + .track { outline: 3px solid var(--brand-gold); outline-offset: 2px }
 .switch input:disabled + .track { opacity: .5 }
 @media (prefers-reduced-motion: reduce) { .switch .track, .switch .track::after { transition: none } }
-@media (max-width: 560px) { .row { grid-template-columns: 56px minmax(0, 1fr) } .r-act { grid-column: 1 / -1; justify-content: flex-start } .r-act .switch { margin-left: auto } }
+@media (max-width: 560px) { .row { grid-template-columns: 56px minmax(0, 1fr) } .row.nothumb { grid-template-columns: minmax(0, 1fr) } .r-act { grid-column: 1 / -1; justify-content: flex-start } .r-act .switch { margin-left: auto } }
 .empty { color: var(--muted); padding: 24px 0 }
 
 /* horário de funcionamento */
@@ -204,7 +205,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   <form class="sheet" id="edit" novalidate role="dialog" aria-modal="true" aria-labelledby="e-title">
     <h2 id="e-title">Editar</h2>
     <div class="grid">
-      <div class="field s6"><span class="flabel">Foto</span>
+      <div class="field s6" id="e-foto-f"><span class="flabel">Foto</span>
         <div class="photo"><div class="thumb" id="e-thumb"></div>
           <div class="photo-btns"><span class="btn ghost small file-btn"><span id="e-file-l">Escolher foto</span><input type="file" id="e-file" accept="image/jpeg,image/png,image/webp" aria-label="Escolher foto"></span>
           <button type="button" class="btn ghost small" id="e-nofoto">Remover foto</button></div></div></div>
@@ -339,8 +340,8 @@ function renderList() {
   $("list").innerHTML = groups.map(g => {
     const items = list.filter(r => r.categoria === g); if (!items.length) return "";
     return `<div class="group"><h3>${esc(cap(g))}</h3>${items.map(r => `
-      <div class="row${r.ativo ? "" : " off"}">
-        ${thumbHTML(r)}
+      <div class="row${r.ativo ? "" : " off"}${r.tipo === "item" ? "" : " nothumb"}">
+        ${r.tipo === "item" ? thumbHTML(r) : ""}
         <div>
           <div class="r-name">${esc(r.nome)} ${r.ativo ? "" : `<span class="chip">Oculto</span>`}</div>
           <div class="r-meta"><span><b>${brl.format(+r.preco)}</b></span>${r.porcao ? `<span>${esc(r.porcao)}</span>` : ""}${macrosHTML(r)}</div>
@@ -433,7 +434,7 @@ function openEdit(r) {
   $("e-qtd").value = m ? m[1].replace(",", ".") : "";
   $("e-un").value = m ? m[2].toLowerCase() : (r?.categoria === "sucos" ? "ml" : "g");
   $("e-porcao-f").hidden = isItem; $("e-qtd-f").hidden = !isItem;
-  $("e-desc-f").hidden = !isItem;
+  $("e-desc-f").hidden = !isItem; $("e-foto-f").hidden = !isItem;
   $("e-desc").value = r?.descricao || "";
   $("e-preco").value = r ? +r.preco : "";
   $("e-ordem").value = r ? r.ordem : (Math.max(0, ...rows.map(x => x.ordem)) + 1);
@@ -501,11 +502,12 @@ $("edit").addEventListener("submit", async e => {
   try {
     const id = editing ? editing.id : (() => { let x = slug(nome) || "item"; if (rows.some(r => r.id === x)) x += "-" + Date.now().toString(36).slice(-4); return x; })();
     const oldUrl = editing?.foto_url || null;
-    if (photo.file) { $("e-msg").className = "msg"; $("e-msg").textContent = "Enviando foto…"; data.foto_url = await uploadPhoto(id, photo.file); }
+    if (!isItem) {}
+    else if (photo.file) { $("e-msg").className = "msg"; $("e-msg").textContent = "Enviando foto…"; data.foto_url = await uploadPhoto(id, photo.file); }
     else data.foto_url = photo.url;
     if (editing) await patchRow(id, data);
     else { const [row] = await api("dayse", { method: "POST", body: JSON.stringify({ id, tipo: isItem ? "item" : "ingrediente", ...data }) }); rows.push(row); }
-    if (oldUrl && oldUrl !== data.foto_url) removeStored(oldUrl);
+    if (isItem && oldUrl && oldUrl !== data.foto_url) removeStored(oldUrl);
     rows.sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome));
     closeEdit(); renderList(); toast(`${nome} salvo`);
   } catch (err) { $("e-msg").className = "msg err"; $("e-msg").textContent = "Não foi possível salvar: " + err.message; }
