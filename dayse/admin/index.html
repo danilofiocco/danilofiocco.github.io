@@ -772,9 +772,7 @@ function tickTimers() {
 }
 setInterval(tickTimers, 1000);
 function renderOrders(fresh = []) {
-  const pend = orders.filter(o => o.status === "novo" || o.status === "preparo");
-  const pratos = pend.reduce((n, o) => n + (o.pratos || 0), 0);
-  $("ped-count").textContent = `(${pratos})`;
+  $("ped-count").textContent = `(${orders.filter(o => o.status !== "concluido").length})`;
   if (view !== "pedidos") return;
   const by = st => orders.filter(o => o.status === st).sort((a, b) => st === "concluido" ? b.status_em.localeCompare(a.status_em) : st === "novo" ? a.criado_em.localeCompare(b.criado_em) : a.status_em.localeCompare(b.status_em));
   STATUS.forEach(st => {
