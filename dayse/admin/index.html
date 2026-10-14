@@ -117,6 +117,11 @@ svg.i { width: 16px; height: 16px; flex: none }
 .big.open { background: var(--ok); color: #fff; box-shadow: none }
 .big.close { background: var(--closed); color: #fff; box-shadow: none }
 
+.prazo { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; margin-bottom: 14px }
+.prazo h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 19px }
+.prazo-in { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+.sel { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px }
+.sel select { padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-weight: 700 }
 /* painéis */
 .overlay { position: fixed; inset: 0; z-index: 40; background: rgba(10,20,14,.55); display: flex; align-items: center; justify-content: center; padding: 16px }
 .sheet { background: var(--surface); border-radius: 16px; width: 100%; max-width: 560px; max-height: 100%; overflow-y: auto; padding: 22px }
@@ -161,7 +166,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <nav class="nav" id="nav" hidden aria-label="Seções">
       <button data-view="item" aria-current="true">Pratos</button>
       <button data-view="ingrediente" aria-current="false">Ingredientes</button>
-      <button data-view="horario" aria-current="false"><svg class="i"><use href="#i-clock"/></svg>Horário de Funcionamento<span class="state" id="state" hidden></span></button>
+      <button data-view="horario" aria-current="false"><svg class="i"><use href="#i-clock"/></svg>Prazo de entrega e Horários<span class="state" id="state" hidden></span></button>
     </nav>
     <button class="btn ghost small" id="logout" hidden>Sair</button>
   </div>
@@ -188,7 +193,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   </section>
 
   <section id="v-hours" hidden>
-    <div class="bar"><h2>Horário de Funcionamento</h2></div>
+    <div class="bar"><h2>Prazo de entrega e Horários</h2></div>
+    <div class="prazo">
+      <div><h3>Prazo de entrega</h3><p class="msg">Aparece para o cliente no fim dos dados de entrega: “Prazo de entrega de até …”.</p></div>
+      <div class="prazo-in">
+        <label class="sel"><select id="pz-h" aria-label="Horas"></select>h</label>
+        <label class="sel"><select id="pz-m" aria-label="Minutos"></select>min</label>
+        <button class="btn" id="save-prazo">Salvar prazo</button>
+      </div>
+    </div>
     <div class="now" id="now"></div>
     <div class="cards" role="radiogroup" aria-label="Como o restaurante abre">
       <div class="card" id="card-prog" role="radio" tabindex="0" aria-checked="true">
@@ -314,7 +327,7 @@ async function start() {
     rows = r || []; config = c && c[0] ? c[0] : { modo: "programado", aberto_manual: false, horarios: DEFAULT_HOURS };
     if (!Array.isArray(config.horarios) || config.horarios.length !== 7) config.horarios = DEFAULT_HOURS;
     hours = JSON.parse(JSON.stringify(config.horarios));
-    renderList(); renderHours(); renderState();
+    renderList(); renderHours(); renderPrazo(); renderState();
   } catch (e) { $("list").innerHTML = `<p class="empty">Não foi possível carregar: ${esc(e.message)}</p>`; }
 }
 function show(v) {
@@ -569,6 +582,19 @@ function renderState() {
   mb.textContent = config.modo === "manual" && config.aberto_manual ? "Fechar restaurante agora" : "Abrir restaurante agora";
   mb.className = "btn big " + (config.modo === "manual" && config.aberto_manual ? "close" : "open");
 }
+function renderPrazo() {
+  const m = Number.isFinite(config.prazo_min) ? config.prazo_min : 90;
+  $("pz-h").innerHTML = [0, 1, 2, 3, 4, 5].map(h => `<option value="${h}">${h}</option>`).join("");
+  $("pz-m").innerHTML = Array.from({ length: 12 }, (_, i) => i * 5).map(x => `<option value="${x}">${String(x).padStart(2, "0")}</option>`).join("");
+  $("pz-h").value = Math.min(5, Math.floor(m / 60)); $("pz-m").value = Math.round(m % 60 / 5) * 5 % 60;
+}
+$("save-prazo").addEventListener("click", async e => {
+  const b = e.currentTarget, m = +$("pz-h").value * 60 + +$("pz-m").value;
+  if (!m) { toast("Escolha um prazo maior que zero."); return; }
+  b.disabled = true;
+  try { await saveConfig({ prazo_min: m }, `Prazo salvo: até ${Math.floor(m / 60) ? Math.floor(m / 60) + "h" : ""}${m % 60 ? String(m % 60).padStart(2, "0") + "m" : ""}`); }
+  catch (err) { toast("Não foi possível salvar: " + err.message); } finally { b.disabled = false; }
+});
 function renderHours() {
   $("days").innerHTML = WEEK_ORDER.map(d => { const h = hours[d]; const over = toMin(h.fecha) <= toMin(h.abre); return `
     <div class="day">
