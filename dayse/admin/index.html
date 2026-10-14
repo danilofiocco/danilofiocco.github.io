@@ -133,6 +133,11 @@ svg.i { width: 16px; height: 16px; flex: none }
 .photo-btns { display: flex; gap: 8px; flex-wrap: wrap }
 .file-btn { position: relative; overflow: hidden }
 .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer }
+.t-filter { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px }
+.t-filter button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13.5px; cursor: pointer }
+.t-filter button span { color: var(--muted); font-weight: 600; margin-left: 4px }
+.t-filter button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+.t-filter button[aria-pressed="true"] span { color: inherit; opacity: .7 }
 .trash-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; padding-block: 10px; border-top: 1px solid var(--line) }
 .trash-row .r-meta { margin: 0 }
 .confirm { font-size: 13px; font-weight: 700; color: var(--danger) }
@@ -234,6 +239,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="t-title">
     <h2 id="t-title">Lixeira</h2>
     <p class="msg" style="margin-bottom: 8px">Itens na lixeira não aparecem no site. Você pode restaurar ou excluir de vez.</p>
+    <div class="t-filter" id="t-filter" role="group" aria-label="Filtrar lixeira"></div>
     <div id="t-list"></div>
     <div class="sheet-foot" id="t-foot"></div>
   </div>
@@ -252,7 +258,7 @@ const $ = id => document.getElementById(id);
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const icon = n => `<svg class="i" aria-hidden="true"><use href="#i-${n}"/></svg>`;
-let session = null, rows = [], view = "item", editing = null, trashConfirm = null, config = null, hours = null;
+let session = null, rows = [], view = "item", editing = null, trashConfirm = null, tFilter = "todos", config = null, hours = null;
 
 try { session = JSON.parse(sessionStorage.getItem("fm-admin")); } catch (e) {}
 const keep = () => { try { session ? sessionStorage.setItem("fm-admin", JSON.stringify(session)) : sessionStorage.removeItem("fm-admin"); } catch (e) {} };
@@ -306,7 +312,8 @@ async function start() {
   try {
     const [r, c] = await Promise.all([api("dayse?select=*&order=ordem,nome"), api("dayse_config?id=eq.1&select=*")]);
     rows = r || []; config = c && c[0] ? c[0] : { modo: "programado", aberto_manual: false, horarios: DEFAULT_HOURS };
-    hours = JSON.parse(JSON.stringify(config.horarios || DEFAULT_HOURS));
+    if (!Array.isArray(config.horarios) || config.horarios.length !== 7) config.horarios = DEFAULT_HOURS;
+    hours = JSON.parse(JSON.stringify(config.horarios));
     renderList(); renderHours(); renderState();
   } catch (e) { $("list").innerHTML = `<p class="empty">Não foi possível carregar: ${esc(e.message)}</p>`; }
 }
@@ -356,8 +363,12 @@ function renderList() {
 }
 
 /* ---------- lixeira ---------- */
+const T_FILTERS = [["todos", "Todos"], ["item", "Pratos"], ["ingrediente", "Ingredientes"]];
+const trashShown = () => trashed().filter(r => tFilter === "todos" || r.tipo === tFilter);
 function renderTrash() {
-  const list = trashed();
+  const all = trashed(), list = trashShown();
+  $("t-filter").innerHTML = T_FILTERS.map(([k, label]) =>
+    `<button type="button" data-tfilter="${k}" aria-pressed="${tFilter === k}">${label}<span>${k === "todos" ? all.length : all.filter(r => r.tipo === k).length}</span></button>`).join("");
   $("t-list").innerHTML = list.length ? list.map(r => `
     <div class="trash-row">
       <div><div class="r-name">${esc(r.nome)} <span class="chip">${r.tipo === "item" ? esc(cap(r.categoria)) : "Ingrediente"}</span></div>
@@ -365,10 +376,10 @@ function renderTrash() {
       <div class="r-act">${trashConfirm === r.id
         ? `<span class="confirm">Excluir de vez?</span><button class="btn danger small" data-purge-yes="${esc(r.id)}">Excluir</button><button class="btn ghost small" data-cancel>Não</button>`
         : `<button class="btn ghost small" data-restore="${esc(r.id)}">${icon("restore")}Restaurar</button><button class="btn ghost small" data-purge="${esc(r.id)}">${icon("trash")}Excluir permanentemente</button>`}</div>
-    </div>`).join("") : `<p class="empty">A lixeira está vazia.</p>`;
+    </div>`).join("") : `<p class="empty">${all.length ? (tFilter === "item" ? "Nenhum prato na lixeira." : "Nenhum ingrediente na lixeira.") : "A lixeira está vazia."}</p>`;
   $("t-foot").innerHTML = (list.length ? (trashConfirm === "*"
     ? `<span class="confirm" style="align-self: center">Apagar ${list.length} ${list.length === 1 ? "item" : "itens"} de vez?</span><button class="btn danger" data-empty-yes>Esvaziar</button><button class="btn ghost" data-cancel>Não</button>`
-    : `<button class="btn danger" data-empty>${icon("trash")}Esvaziar lixeira</button>`) : "") + `<button class="btn ghost" data-close-trash>Fechar</button>`;
+    : `<button class="btn danger" data-empty>${icon("trash")}${{ todos: "Esvaziar lixeira", item: "Esvaziar pratos", ingrediente: "Esvaziar ingredientes" }[tFilter]}</button>`) : "") + `<button class="btn ghost" data-close-trash>Fechar</button>`;
 }
 async function purge(ids) {
   const list = rows.filter(r => ids.includes(r.id));
@@ -389,7 +400,7 @@ document.addEventListener("click", async e => {
     try { const row = await patchRow(d.del, { excluido_em: new Date().toISOString() }); renderList(); toast(`${row.nome} foi para a lixeira`); }
     catch (err) { t.disabled = false; toast("Não foi possível excluir: " + err.message); }
   }
-  else if (t.id === "trash-btn") { trashConfirm = null; renderTrash(); $("tv").hidden = false; document.body.style.overflow = "hidden"; }
+  else if (t.id === "trash-btn") { trashConfirm = null; tFilter = "todos"; renderTrash(); $("tv").hidden = false; document.body.style.overflow = "hidden"; }
   else if (d.closeTrash !== undefined) closeTrash();
   else if (d.cancel !== undefined) { trashConfirm = null; renderTrash(); }
   else if (d.restore) {
@@ -397,6 +408,7 @@ document.addEventListener("click", async e => {
     try { const row = await patchRow(d.restore, { excluido_em: null }); renderTrash(); renderList(); toast(`${row.nome} restaurado`); }
     catch (err) { t.disabled = false; toast("Não foi possível restaurar: " + err.message); }
   }
+  else if (d.tfilter) { tFilter = d.tfilter; trashConfirm = null; renderTrash(); }
   else if (d.purge) { trashConfirm = d.purge; renderTrash(); }
   else if (d.purgeYes) {
     t.disabled = true; const nome = rows.find(r => r.id === d.purgeYes)?.nome;
@@ -405,8 +417,8 @@ document.addEventListener("click", async e => {
   }
   else if (d.empty !== undefined) { trashConfirm = "*"; renderTrash(); }
   else if (d.emptyYes !== undefined) {
-    t.disabled = true; const ids = trashed().map(r => r.id);
-    try { await purge(ids); trashConfirm = null; renderTrash(); renderList(); toast("Lixeira esvaziada"); }
+    t.disabled = true; const ids = trashShown().map(r => r.id);
+    try { await purge(ids); trashConfirm = null; renderTrash(); renderList(); toast(tFilter === "todos" ? "Lixeira esvaziada" : `${ids.length} ${ids.length === 1 ? "item excluído" : "itens excluídos"} de vez`); }
     catch (err) { t.disabled = false; toast("Não foi possível esvaziar: " + err.message); }
   }
   else if (t.id === "e-cancel") closeEdit();
