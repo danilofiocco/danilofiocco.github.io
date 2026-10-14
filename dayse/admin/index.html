@@ -179,6 +179,26 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 .tk-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 14.5px; padding-block: 8px; border-bottom: 1.5px dashed var(--tk-mut) }
 .tk-addr { font-size: 12.5px; color: var(--tk-mut); padding-top: 8px }
 .tk-move { margin-top: 10px; width: 100%; font: inherit; font-family: var(--body); font-size: 12.5px; font-weight: 800; border: 1.5px solid var(--tk-ink); background: transparent; color: var(--tk-ink); border-radius: 8px; padding: 6px; cursor: pointer }
+.zoom { position: fixed; inset: 0; z-index: 65; background: rgba(10,20,14,.82); overflow-y: auto; padding: 32px 16px; display: flex; justify-content: center; align-items: flex-start }
+.zoom-in { width: min(760px, 100%); margin: auto 0 }
+.zoom-in .tk-wrap { margin: 0 }
+.zoom-in .ticket { cursor: default; font-size: clamp(20px, 2.6vw, 28px); padding: 34px 28px; user-select: text;
+  -webkit-mask-size: 28px 51%, 28px 51%; mask-size: 28px 51%, 28px 51% }
+.zoom-in .tk-timer { margin: -34px -28px 22px; padding: 16px 28px 12px; font-size: 1.5em }
+.zoom-in .tk-timer.done { font-size: 1em }
+.zoom-in .tk-head { touch-action: auto; cursor: default }
+.zoom-in .tk-head b { font-size: 1.5em }
+.zoom-in .tk-head time { font-size: .85em }
+.zoom-in .tk-grip { display: none }
+.zoom-in .tk-name { font-size: 1.25em; margin: 16px 0 10px }
+.zoom-in .tk-items li { padding-block: 6px }
+.zoom-in .tk-items small, .zoom-in .tk-addr { font-size: .8em }
+.zoom-in .tk-total { font-size: 1.15em; padding-block: 14px }
+.zoom-in .tk-wa { font-size: .8em; padding: 8px 16px 8px 12px; margin-bottom: 14px }
+.zoom-in .tk-wa svg { width: 1.2em; height: 1.2em }
+.zoom-in .tk-move { font-size: .7em; padding: 12px; margin-top: 18px }
+.zoom-x { position: fixed; top: 12px; right: 16px; width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--brand-cream); color: var(--brand); font-size: 30px; line-height: 1; cursor: pointer; z-index: 66 }
+.tk-wrap:not(.ghost) .ticket { cursor: pointer }
 /* painéis */
 .overlay { position: fixed; inset: 0; z-index: 40; background: rgba(10,20,14,.55); display: flex; align-items: center; justify-content: center; padding: 16px }
 .sheet { background: var(--surface); border-radius: 16px; border: 2px solid var(--brand-gold); width: 100%; max-width: 560px; max-height: 100%; overflow-y: auto; padding: 22px }
@@ -328,6 +348,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <div id="t-list"></div>
     <div class="sheet-foot" id="t-foot"></div>
   </div>
+</div>
+<div class="zoom" id="zoom" hidden role="dialog" aria-modal="true" aria-label="Comanda ampliada">
+  <button type="button" class="zoom-x" id="zoom-x" aria-label="Fechar">×</button>
+  <div class="zoom-in" id="zoom-in"></div>
 </div>
 <div class="toast" id="toast" hidden></div>
 <div id="print-area" aria-hidden="true"></div>
@@ -781,6 +805,7 @@ function renderOrders(fresh = []) {
     $("n-" + st).textContent = list.length;
     $("c-" + st).innerHTML = list.length ? list.map(o => ticketHTML(o, fresh.includes(o.id))).join("") : `<p class="col-empty">${EMPTY[st]}</p>`;
   });
+  if (zoomId !== null) renderZoom();
   tickTimers();
 }
 async function moveOrder(id, status) {
@@ -806,10 +831,31 @@ $("print-btn").addEventListener("click", () => {
   $("print-area").innerHTML = list.map(labelHTML).join("");
   print();
 });
-$("board").addEventListener("click", e => { const b = e.target.closest("[data-move]"); if (!b) return; const o = orders.find(x => x.id === +b.dataset.move); if (o && NEXT[o.status]) moveOrder(o.id, NEXT[o.status][0]); });
+function onMoveClick(e) { const b = e.target.closest("[data-move]"); if (!b) return false; const o = orders.find(x => x.id === +b.dataset.move); if (o && NEXT[o.status]) moveOrder(o.id, NEXT[o.status][0]); return true; }
+$("board").addEventListener("click", e => {
+  if (onMoveClick(e) || e.target.closest("a, button")) return;
+  const wrap = e.target.closest(".tk-wrap");
+  if (wrap && !justDragged) openZoom(+wrap.dataset.id);
+});
+// Comanda ampliada: clicar num card abre ele em tela cheia, com letras maiores.
+let zoomId = null;
+function renderZoom() {
+  const o = orders.find(x => x.id === zoomId);
+  if (!o) { closeZoom(); return; }
+  $("zoom-in").innerHTML = ticketHTML(o, false); tickTimers();
+}
+function openZoom(id) { zoomId = id; renderZoom(); $("zoom").hidden = false; document.body.style.overflow = "hidden"; $("zoom-x").focus(); }
+function closeZoom() { zoomId = null; $("zoom").hidden = true; document.body.style.overflow = ""; }
+$("zoom").addEventListener("click", e => {
+  if (e.target.closest("a")) return;
+  if (onMoveClick(e)) { closeZoom(); return; }
+  if (e.target.closest(".ticket") && e.target.id !== "zoom-x") return;
+  closeZoom();
+});
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("zoom").hidden) closeZoom(); });
 
 // Arrastar: com o mouse, pelo card inteiro; no toque, pela faixa de cima do card (para a página continuar rolando).
-let drag = null;
+let drag = null, justDragged = false;
 $("board").addEventListener("pointerdown", e => {
   const wrap = e.target.closest(".tk-wrap"); if (!wrap || e.button > 0 || e.target.closest("button, a")) return;
   if (e.pointerType !== "mouse" && !e.target.closest(".tk-head")) return;
@@ -851,6 +897,7 @@ function endDrag(e, drop) {
   document.querySelectorAll(".col").forEach(c => c.classList.remove("over"));
   if (!d.started) return;
   d.ghost.remove(); d.wrap.classList.remove("dragging");
+  justDragged = true; setTimeout(() => justDragged = false, 50);
   if (drop && d.col) moveOrder(d.id, d.col.dataset.status);
 }
 $("board").addEventListener("pointerup", e => endDrag(e, true));
