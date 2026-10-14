@@ -243,7 +243,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   </form>
 
   <section id="v-orders" hidden>
-    <div class="bar"><h2>Pedidos</h2><span class="msg" id="ord-msg">Arraste os pedidos entre as colunas.</span></div>
+    <div class="bar"><h2>Pedidos</h2><label class="switch" title="Imprime cada pedido novo assim que ele chega, neste aparelho"><input type="checkbox" id="auto-print"><span class="track"></span>Imprimir pedidos novos automaticamente</label><span class="msg" id="ord-msg">Arraste os pedidos entre as colunas.</span></div>
     <div class="board" id="board">
       <div class="col" data-status="novo"><h3>Novos pedidos <span class="n" id="n-novo">0</span></h3><div class="col-body" id="c-novo"></div></div>
       <div class="col" data-status="preparo"><h3>Pago · Em preparação <span class="n" id="n-preparo">0</span></h3><div class="col-body" id="c-preparo"></div></div>
@@ -728,7 +728,7 @@ async function loadOrders() {
     const fresh = seenOrders ? all.filter(o => !seenOrders.has(o.id)).map(o => o.id) : [];
     seenOrders = new Set(all.map(o => o.id)); orders = all;
     renderOrders(fresh);
-    if (fresh.length) ringBell();
+    if (fresh.length) { ringBell(); autoPrint(all.filter(o => fresh.includes(o.id))); }
   } catch (e) { $("ord-msg").textContent = "Não foi possível carregar os pedidos: " + e.message; }
 }
 const hhmm = iso => { const d = new Date(iso), today = new Date().toDateString() === d.toDateString();
@@ -799,6 +799,19 @@ function labelHTML(o) {
     <p>${esc([e.bairro, e.cidade].filter(Boolean).join(" · "))}${e.cep ? ` · CEP ${esc(e.cep)}` : ""}</p>
     <ul>${(o.itens || []).map(i => `<li><span>${+i.qtd}x ${esc(i.nome)}${i.detalhe ? `<small>${esc(i.detalhe)}</small>` : ""}</span><span>${brl.format(i.qtd * i.preco)}</span></li>`).join("")}</ul>
     <p class="tot"><span>TOTAL</span><span>${brl.format(+o.total)}</span></p></section>`;
+}
+// Impressão automática dos pedidos novos. A escolha fica salva só neste aparelho.
+// Sem configuração extra, o navegador mostra a janela de impressão a cada pedido; com o Chrome aberto
+// com a opção --kiosk-printing, imprime direto na impressora padrão, sem perguntar.
+try { $("auto-print").checked = localStorage.getItem("fm-auto-print") === "1"; } catch (e) {}
+$("auto-print").addEventListener("change", e => {
+  try { localStorage.setItem("fm-auto-print", e.target.checked ? "1" : "0"); } catch (err) {}
+  toast(e.target.checked ? "Pedidos novos serão impressos assim que chegarem" : "Impressão automática desligada");
+});
+function autoPrint(list) {
+  if (!$("auto-print").checked || !list.length) return;
+  $("print-area").innerHTML = list.map(labelHTML).join("");
+  setTimeout(() => print(), 300);
 }
 $("print-btn").addEventListener("click", () => {
   const list = orders.filter(o => o.status === "etiquetas").sort((a, b) => a.status_em.localeCompare(b.status_em));
