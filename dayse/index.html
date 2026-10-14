@@ -12,7 +12,7 @@
 :root {
   --brand: #214b3d; --brand-gold: #c6a15b; --brand-cream: #f2ece0;
   --bg: #f5f4ef; --surface: #ffffff; --ink: #1b2e27; --muted: #5d6c64;
-  --line: #e0ddd2; --accent: #214b3d; --accent-ink: #ffffff; --warm: #c6a15b; --hl: #f0e3c2; --yellow: #dcbd72; --closed: #b3261e;
+  --line: #e0ddd2; --accent: #214b3d; --accent-ink: #ffffff; --warm: #c6a15b; --hl: #f0e3c2; --closed: #b3261e;
   --m-prot: #2f7a5c; --m-carb: #d4a64a; --m-fat: #b5654a;
   --display: "Marcellus", "Palatino Linotype", Georgia, serif;
   --body: "Nunito Sans", "Segoe UI", system-ui, sans-serif;
@@ -50,9 +50,9 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 .category + .category { margin-top: 32px }
 .build { display: flex; flex-direction: column; align-items: stretch; gap: 8px }
 .build-btn { font: inherit; display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 14px 20px; border: 0; border-radius: 14px; cursor: pointer;
-  background: var(--yellow); color: var(--brand); font-family: var(--display); font-size: 21px; box-shadow: inset 0 0 0 2px var(--brand) }
-.build-btn:hover { filter: brightness(1.05) }
-.build-btn svg { width: 26px; height: 26px; color: var(--brand); flex: none }
+  background: var(--brand); color: var(--brand-cream); font-family: var(--display); font-size: 21px; box-shadow: inset 0 0 0 2px var(--brand-gold) }
+.build-btn:hover { filter: brightness(1.12) }
+.build-btn svg { width: 26px; height: 26px; color: var(--brand-gold); flex: none }
 .build-note { margin: 0; font-size: 13.5px; color: var(--muted); text-align: center }
 .build-or { margin: 4px 0 0; text-align: center; color: var(--muted); font-size: 14px; display: flex; align-items: center; gap: 12px }
 .build-or::before, .build-or::after { content: ""; flex: 1; height: 1px; background: var(--line) }
@@ -80,8 +80,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 .add.in { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent) }
 @media (max-width: 480px) { .dish { grid-template-columns: 56px minmax(0, 1fr) } .plate { width: 56px; height: 56px; font-size: 18px }
   .dish .add { grid-column: 2; justify-self: start } }
-.cart { --surface: var(--yellow); --ink: #1b2e27; --muted: #3a3324; --line: rgba(27,46,39,.22); --bg: rgba(255,255,255,.35); --accent: #214b3d;
-  color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px) }
+.cart { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px) }
 .cart-head { display: flex; justify-content: space-between; align-items: baseline }
 .count { font-size: 13px; color: var(--muted) }
 .empty { color: var(--muted); font-size: 14.5px; padding-block: 12px }
@@ -99,7 +98,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 .row { display: flex; justify-content: space-between }
 .row.small { font-size: 14px; color: var(--muted) }
 .row.big { font-family: var(--body); font-weight: 800; font-size: 22px; padding-top: 8px; border-top: 2px solid var(--ink) }
-.checkout { margin-top: 16px; width: 100%; font: inherit; font-weight: 700; border: 0; border-radius: 10px; padding: 13px; cursor: pointer; background: var(--brand); color: var(--brand-cream) }
+.checkout { margin-top: 16px; width: 100%; font: inherit; font-weight: 700; border: 0; border-radius: 10px; padding: 13px; cursor: pointer; background: var(--warm); color: #1d2a22 }
 .checkout:disabled { opacity: .45; cursor: not-allowed }
 .note { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; text-align: center }
 .handle, .summary { display: none }
@@ -183,7 +182,6 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 .ing-list { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column }
 .ing-list li { display: flex; justify-content: space-between; gap: 12px; padding-block: 8px; border-bottom: 1px solid var(--line); font-size: 14.5px; font-variant-numeric: tabular-nums }
 button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid var(--warm); outline-offset: 2px }
-.cart button:focus-visible, .cart input:focus-visible, .build-btn:focus-visible { outline-color: var(--brand) }
 .closed-bar { background: var(--closed); color: #fff; font-weight: 700; font-size: 14.5px; text-align: center; padding-block: 10px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
 .add:disabled, .add:disabled:hover { background: var(--line); color: var(--muted); box-shadow: none; cursor: not-allowed; filter: none }
