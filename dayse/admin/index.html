@@ -735,7 +735,7 @@ const hhmm = iso => { const d = new Date(iso), today = new Date().toDateString()
 // Link para abrir a conversa com o cliente no WhatsApp (número brasileiro com DDD).
 // A conversa já abre com a mensagem de cobrança: número do pedido, itens, total e a chave Pix.
 function orderText(o) {
-  return [`Olá, recebemos seu pedido #${o.id}:`, "",
+  return [`Olá, ${String(o.nome || "").trim()}. Somos da Fit & Massa e acabamos de receber seu pedido #${o.id}:`, "",
     ...(o.itens || []).map(i => `${+i.qtd}x ${i.nome} (${brl.format(i.qtd * i.preco)})${i.detalhe ? ": " + i.detalhe : ""}`),
     `Total: ${brl.format(+o.total)}`, "",
     `Efetue o pagamento via Pix para ${PIX_KEY} e começaremos a preparação.`].join("\n");
