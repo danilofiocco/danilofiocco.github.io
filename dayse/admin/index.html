@@ -36,6 +36,7 @@ svg.i { width: 16px; height: 16px; flex: none }
 .nav button { border: 1px solid rgba(242,236,224,.35); background: transparent; color: var(--brand-cream); border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px }
 .nav button[aria-current="true"] { background: var(--brand-cream); color: var(--brand); border-color: var(--brand-cream) }
 .state { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: rgba(242,236,224,.12) }
+.nav button[aria-current="true"] .state { background: rgba(33,75,61,.1) }
 .state::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c, #9aa) }
 .state.open::before { animation: pulse 1.6s ease-out infinite }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(111,211,159,.75) } 70% { box-shadow: 0 0 0 7px rgba(111,211,159,0) } 100% { box-shadow: 0 0 0 0 rgba(111,211,159,0) } }
@@ -154,9 +155,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <nav class="nav" id="nav" hidden aria-label="Seções">
       <button data-view="item" aria-current="true">Pratos</button>
       <button data-view="ingrediente" aria-current="false">Ingredientes</button>
-      <button data-view="horario" aria-current="false"><svg class="i"><use href="#i-clock"/></svg>Horário de Funcionamento</button>
+      <button data-view="horario" aria-current="false"><svg class="i"><use href="#i-clock"/></svg>Horário de Funcionamento<span class="state" id="state" hidden></span></button>
     </nav>
-    <span class="state" id="state" hidden></span>
     <button class="btn ghost small" id="logout" hidden>Sair</button>
   </div>
 </header>
@@ -527,12 +527,27 @@ function openBySchedule(h) {
   if (yest && yest.aberto) { const a = toMin(yest.abre), f = toMin(yest.fecha); if (f <= a && min < f) return true; }
   return false;
 }
+// Minutos até a próxima abertura programada (null se nenhum dia estiver aberto).
+function minutesToOpen(h) {
+  const { day, min } = nowInBrasilia();
+  for (let k = 0; k < 8; k++) {
+    const x = h[(day + k) % 7];
+    if (x && x.aberto) { const m = k * 1440 + toMin(x.abre) - min; if (m > 0) return m; }
+  }
+  return null;
+}
+function countdown(m) {
+  const d = Math.floor(m / 1440), hh = Math.floor(m % 1440 / 60), mm = m % 60;
+  const parts = [d && `${d} ${d === 1 ? "dia" : "dias"}`, hh && `${hh} ${hh === 1 ? "hora" : "horas"}`, mm && `${mm} ${mm === 1 ? "minuto" : "minutos"}`].filter(Boolean);
+  return "Abre em " + (parts.length > 1 ? parts.slice(0, -1).join(", ") + " e " + parts.at(-1) : parts[0]);
+}
 function isOpen() { return config.modo === "manual" ? config.aberto_manual : openBySchedule(config.horarios || DEFAULT_HOURS); }
 function renderState() {
   if (!config) return;
   const open = isOpen(), how = config.modo === "manual" ? "na hora" : "pelo horário programado";
   $("state").hidden = false; $("state").style.setProperty("--c", open ? "#6fd39f" : "#ff8a80");
-  $("state").textContent = open ? "Aberto" : "Fechado"; $("state").classList.toggle("open", open);
+  const wait = !open && config.modo !== "manual" ? minutesToOpen(config.horarios || DEFAULT_HOURS) : null;
+  $("state").textContent = open ? "Aberto" : wait ? `Fechado · ${countdown(wait)}` : "Fechado"; $("state").classList.toggle("open", open);
   $("now").innerHTML = `Agora o restaurante está <strong style="--c: var(${open ? "--ok" : "--closed"})">${open ? "aberto" : "fechado"}</strong> (${how}).`;
   $("card-prog").setAttribute("aria-checked", config.modo === "programado");
   $("card-man").setAttribute("aria-checked", config.modo === "manual");
@@ -581,7 +596,7 @@ async function pickCard(modo) {
   $(id).addEventListener("click", e => { if (!e.target.closest("button, input, label")) pickCard(modo); });
   $(id).addEventListener("keydown", e => { if ((e.key === " " || e.key === "Enter") && e.target === $(id)) { e.preventDefault(); pickCard(modo); } });
 });
-setInterval(renderState, 30000);
+setInterval(renderState, 20000);
 
 if (session && session.token) start();
 </script>
