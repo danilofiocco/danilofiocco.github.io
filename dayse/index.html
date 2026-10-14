@@ -63,6 +63,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 .dish h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 19px }
 .dish p { margin: 2px 0 0; color: var(--muted); font-size: 14.5px }
 .meta { display: flex; gap: 10px; align-items: baseline; margin-top: 6px; flex-wrap: wrap }
+.weight { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums }
 .price { font-weight: 700; font-variant-numeric: tabular-nums }
 .macros { display: flex; flex-direction: column; gap: 5px; flex-basis: 100%; width: 100%; max-width: 300px; margin-top: 2px }
 .mbar { display: flex; gap: 2px; height: 8px; border-radius: 999px; overflow: hidden }
@@ -282,21 +283,21 @@ const CATEGORIES = [
   { id: "sucos", name: "Sucos" }
 ];
 const DISHES = [
-  { id: "feijoada", cat: "pratos", name: "Feijoada completa", desc: "Feijão preto com carnes, arroz, couve refogada, farofa e laranja.", price: 42.9, macros: [38, 30, 72] },
-  { id: "moqueca", cat: "pratos", name: "Moqueca de peixe", desc: "Peixe no leite de coco e dendê, com arroz branco e pirão.", price: 48.5, macros: [34, 22, 60] },
-  { id: "escondidinho", cat: "pratos", name: "Escondidinho de carne seca", desc: "Purê de mandioca gratinado com carne seca desfiada e queijo coalho.", price: 36.0, macros: [28, 20, 48] },
-  { id: "sand-frango", cat: "lanches", name: "Sanduíche natural de frango", desc: "Pão integral, frango desfiado, cenoura ralada, alface e requeijão light.", price: 19.9, macros: [24, 9, 36] },
-  { id: "wrap-atum", cat: "lanches", name: "Wrap de atum", desc: "Tortilha integral com atum, tomate, rúcula e molho de iogurte.", price: 24.5, macros: [26, 10, 32] },
-  { id: "burger-grao", cat: "lanches", name: "Hambúrguer de grão-de-bico", desc: "Pão australiano, hambúrguer de grão-de-bico, queijo branco e picles.", price: 28.9, macros: [18, 14, 52] },
-  { id: "misto", cat: "lanches", name: "Misto quente integral", desc: "Pão integral na chapa com peito de peru e queijo branco.", price: 16.0, macros: [18, 10, 30] },
-  { id: "tapioca", cat: "lanches", name: "Tapioca de queijo coalho", desc: "Tapioca recheada com queijo coalho, tomate e orégano.", price: 18.5, macros: [12, 11, 40] },
-  { id: "suco-laranja", cat: "sucos", name: "Laranja", desc: "Laranja espremida na hora, sem açúcar.", price: 10.0, macros: [2, 0, 26] },
-  { id: "suco-verde", cat: "sucos", name: "Verde detox", desc: "Couve, maçã, limão e gengibre.", price: 13.5, macros: [2, 0, 22] },
-  { id: "suco-melancia", cat: "sucos", name: "Melancia com hortelã", desc: "Melancia batida com folhas de hortelã.", price: 11.0, macros: [2, 0, 20] },
-  { id: "suco-abacaxi", cat: "sucos", name: "Abacaxi com hortelã", desc: "Abacaxi doce com hortelã fresca.", price: 11.0, macros: [1, 0, 24] },
-  { id: "suco-morango", cat: "sucos", name: "Morango com banana", desc: "Morango e banana batidos com água de coco.", price: 13.0, macros: [3, 1, 34] },
-  { id: "suco-maracuja", cat: "sucos", name: "Maracujá", desc: "Polpa de maracujá batida com gelo.", price: 10.5, macros: [2, 0, 22] },
-  { id: "limonada", cat: "sucos", name: "Limonada suíça", desc: "Limão com casca batido com leite condensado e gelo.", price: 12.0, macros: [5, 6, 48] }
+  { id: "feijoada", cat: "pratos", name: "Feijoada completa", desc: "Feijão preto com carnes, arroz, couve refogada, farofa e laranja.", price: 42.9, weight: "450 g", macros: [38, 30, 72] },
+  { id: "moqueca", cat: "pratos", name: "Moqueca de peixe", desc: "Peixe no leite de coco e dendê, com arroz branco e pirão.", price: 48.5, weight: "420 g", macros: [34, 22, 60] },
+  { id: "escondidinho", cat: "pratos", name: "Escondidinho de carne seca", desc: "Purê de mandioca gratinado com carne seca desfiada e queijo coalho.", price: 36.0, weight: "380 g", macros: [28, 20, 48] },
+  { id: "sand-frango", cat: "lanches", name: "Sanduíche natural de frango", desc: "Pão integral, frango desfiado, cenoura ralada, alface e requeijão light.", price: 19.9, weight: "220 g", macros: [24, 9, 36] },
+  { id: "wrap-atum", cat: "lanches", name: "Wrap de atum", desc: "Tortilha integral com atum, tomate, rúcula e molho de iogurte.", price: 24.5, weight: "250 g", macros: [26, 10, 32] },
+  { id: "burger-grao", cat: "lanches", name: "Hambúrguer de grão-de-bico", desc: "Pão australiano, hambúrguer de grão-de-bico, queijo branco e picles.", price: 28.9, weight: "280 g", macros: [18, 14, 52] },
+  { id: "misto", cat: "lanches", name: "Misto quente integral", desc: "Pão integral na chapa com peito de peru e queijo branco.", price: 16.0, weight: "160 g", macros: [18, 10, 30] },
+  { id: "tapioca", cat: "lanches", name: "Tapioca de queijo coalho", desc: "Tapioca recheada com queijo coalho, tomate e orégano.", price: 18.5, weight: "180 g", macros: [12, 11, 40] },
+  { id: "suco-laranja", cat: "sucos", name: "Laranja", desc: "Laranja espremida na hora, sem açúcar.", price: 10.0, weight: "500 ml", macros: [2, 0, 26] },
+  { id: "suco-verde", cat: "sucos", name: "Verde detox", desc: "Couve, maçã, limão e gengibre.", price: 13.5, weight: "500 ml", macros: [2, 0, 22] },
+  { id: "suco-melancia", cat: "sucos", name: "Melancia com hortelã", desc: "Melancia batida com folhas de hortelã.", price: 11.0, weight: "500 ml", macros: [2, 0, 20] },
+  { id: "suco-abacaxi", cat: "sucos", name: "Abacaxi com hortelã", desc: "Abacaxi doce com hortelã fresca.", price: 11.0, weight: "500 ml", macros: [1, 0, 24] },
+  { id: "suco-morango", cat: "sucos", name: "Morango com banana", desc: "Morango e banana batidos com água de coco.", price: 13.0, weight: "500 ml", macros: [3, 1, 34] },
+  { id: "suco-maracuja", cat: "sucos", name: "Maracujá", desc: "Polpa de maracujá batida com gelo.", price: 10.5, weight: "500 ml", macros: [2, 0, 22] },
+  { id: "limonada", cat: "sucos", name: "Limonada suíça", desc: "Limão com casca batido com leite condensado e gelo.", price: 12.0, weight: "500 ml", macros: [5, 6, 48] }
 ];
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const KEY = "cardapio-dayse-carrinho";
@@ -380,7 +381,7 @@ function dishHTML(d) { return `
       <div>
         <h3>${d.name}</h3>
         <p>${d.desc}</p>
-        <div class="meta"><span class="price">${brl.format(d.price)}</span><span class="macros" role="img" aria-label="Por porção: ${d.macros[0]} gramas de proteína, ${d.macros[1]} de gordura e ${d.macros[2]} de carboidratos">${macroBar(d.macros)}</span></div>
+        <div class="meta"><span class="price">${brl.format(d.price)}</span>${d.weight ? `<span class="weight">${d.weight}</span>` : ""}<span class="macros" role="img" aria-label="Por porção: ${d.macros[0]} gramas de proteína, ${d.macros[1]} de gordura e ${d.macros[2]} de carboidratos">${macroBar(d.macros)}</span></div>
       </div>
       <button class="add" data-add="${d.id}" id="add-${d.id}">Adicionar</button>
     </article>`; }
@@ -642,7 +643,7 @@ async function loadFromSupabase() {
     if (!r.ok) throw new Error("HTTP " + r.status);
     const rows = await r.json();
     const mac = x => [+x.proteina, +x.gordura, +x.carboidrato];
-    const items = rows.filter(x => x.tipo === "item").map(x => ({ id: x.id, cat: x.categoria, name: x.nome, desc: x.descricao || "", price: +x.preco, macros: mac(x) }));
+    const items = rows.filter(x => x.tipo === "item").map(x => ({ id: x.id, cat: x.categoria, name: x.nome, desc: x.descricao || "", price: +x.preco, weight: x.porcao || "", macros: mac(x) }));
     const groups = [];
     rows.filter(x => x.tipo === "ingrediente").forEach(x => {
       let g = groups.find(g => g.group === x.categoria);

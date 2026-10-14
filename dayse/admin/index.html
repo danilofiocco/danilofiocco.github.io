@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Fit &amp; Massa Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Nunito+Sans:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: faixa da marca; abaixo, abas Cardápio/Ingredientes com lista editável; formulário em painel sobreposto */
+:root {
+  --brand: #214b3d; --brand-gold: #c6a15b; --brand-cream: #f2ece0;
+  --bg: #f5f4ef; --surface: #ffffff; --ink: #1b2e27; --muted: #5d6c64; --line: #e0ddd2;
+  --danger: #b23a2a; --ok: #2f7a5c;
+  --m-prot: #2f7a5c; --m-fat: #b5654a; --m-carb: #d4a64a;
+  --display: "Marcellus", "Palatino Linotype", Georgia, serif;
+  --body: "Nunito Sans", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --bg: #0f1c17; --surface: #172a22; --ink: #ece7dc; --muted: #a3b2aa; --line: #2a3f35;
+  --danger: #e07a6a; --ok: #5fb38c; --m-prot: #5fb38c; --m-fat: #d98468; --m-carb: #e0b964; color-scheme: dark } }
+* { box-sizing: border-box }
+[hidden] { display: none !important }
+html, body { margin: 0 }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45 }
+.band { background: var(--brand); color: var(--brand-cream); padding: 14px max(16px, env(safe-area-inset-right, 0px)) 14px max(16px, env(safe-area-inset-left, 0px)) }
+.band-in { max-width: 980px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px }
+.band h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 22px }
+.band h1 span { color: var(--brand-gold) }
+.wrap { max-width: 980px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px)) }
+button, input, select, textarea { font: inherit; color: inherit }
+.btn { border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 700; cursor: pointer; background: var(--brand); color: var(--brand-cream); box-shadow: inset 0 0 0 2px var(--brand-gold) }
+.btn.ghost { background: transparent; color: inherit; box-shadow: inset 0 0 0 1px currentColor }
+.btn.danger { background: var(--danger); color: #fff; box-shadow: none }
+.btn.small { padding: 6px 12px; font-size: 13.5px }
+.btn:disabled { opacity: .5; cursor: wait }
+.band .btn.ghost { color: var(--brand-cream) }
+/* login */
+.login { max-width: 360px; margin: 48px auto; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 14px }
+.login h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 24px }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0 }
+.field label { font-size: 13px; font-weight: 700 }
+.field input, .field select, .field textarea { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); width: 100% }
+.field textarea { min-height: 70px; resize: vertical }
+.msg { font-size: 13.5px; color: var(--muted); margin: 0 }
+.msg.err { color: var(--danger) }
+/* lista */
+.bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 16px }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap }
+.tab { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 16px; font-weight: 700; cursor: pointer }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+.tools { display: flex; gap: 8px; flex-wrap: wrap }
+.tools select { padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface) }
+.group h3 { font-family: var(--display); font-weight: 400; font-size: 18px; margin: 22px 0 6px }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px }
+.row.off { opacity: .6 }
+.r-name { font-weight: 800 }
+.r-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 2px }
+.r-meta b { color: var(--ink) }
+.chip { font-size: 11.5px; font-weight: 800; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); text-transform: uppercase; letter-spacing: .05em }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; background: var(--c) }
+.r-act { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end }
+.confirm { font-size: 13px; font-weight: 700; color: var(--danger) }
+@media (max-width: 560px) { .row { grid-template-columns: minmax(0, 1fr) } .r-act { justify-content: flex-start } }
+.empty { color: var(--muted); padding: 24px 0 }
+/* painel de edição */
+.overlay { position: fixed; inset: 0; z-index: 40; background: rgba(10,20,14,.55); display: flex; align-items: center; justify-content: center; padding: 16px }
+.sheet { background: var(--surface); border-radius: 16px; width: 100%; max-width: 560px; max-height: 100%; overflow-y: auto; padding: 22px }
+.sheet h2 { margin: 0 0 14px; font-family: var(--display); font-weight: 400; font-size: 22px }
+.grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px }
+.s6 { grid-column: span 6 } .s3 { grid-column: span 3 } .s2 { grid-column: span 2 }
+@media (max-width: 480px) { .s3 { grid-column: span 6 } }
+.unit { display: flex; gap: 6px } .unit input { flex: 1; min-width: 0 } .field .unit select { width: auto; flex: none; padding: 10px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg) }
+.check { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px }
+.sheet-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; flex-wrap: wrap }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; z-index: 60 }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--brand-gold); outline-offset: 2px }
+</style>
+</head>
+<body>
+<header class="band">
+  <div class="band-in">
+    <h1>Fit <span>&amp;</span> Massa · Admin</h1>
+    <button class="btn ghost small" id="logout" hidden>Sair</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <form class="login" id="login" novalidate>
+    <h2>Entrar</h2>
+    <div class="field"><label for="l-user">Usuário</label><input id="l-user" autocomplete="username" required></div>
+    <div class="field"><label for="l-pass">Senha</label><input id="l-pass" type="password" autocomplete="current-password" required></div>
+    <button class="btn" id="l-btn">Entrar</button>
+    <p class="msg" id="l-msg"></p>
+  </form>
+
+  <section id="panel" hidden>
+    <div class="bar">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="item" aria-selected="true">Cardápio</button>
+        <button class="tab" role="tab" data-tab="ingrediente" aria-selected="false">Ingredientes</button>
+      </div>
+      <div class="tools">
+        <button class="btn small" id="new">Adicionar</button>
+      </div>
+    </div>
+    <div id="list"><p class="empty">Carregando…</p></div>
+  </section>
+</main>
+
+<div class="overlay" id="ov" hidden>
+  <form class="sheet" id="edit" novalidate role="dialog" aria-modal="true" aria-labelledby="e-title">
+    <h2 id="e-title">Editar</h2>
+    <div class="grid">
+      <div class="field s6"><label for="e-nome">Nome</label><input id="e-nome" required></div>
+      <div class="field s3"><label for="e-cat">Categoria</label><input id="e-cat" list="cats" required></div>
+      <div class="field s3" id="e-porcao-f"><label for="e-porcao">Porção</label><input id="e-porcao" placeholder="ex.: 100 g ou 2 fatias"></div>
+      <div class="field s3" id="e-qtd-f"><label for="e-qtd">Peso ou volume</label><div class="unit"><input id="e-qtd" type="number" min="0" step="1" inputmode="numeric" placeholder="ex.: 350"><select id="e-un" aria-label="Unidade"><option value="g">g</option><option value="ml">ml</option></select></div></div>
+      <div class="field s6" id="e-desc-f"><label for="e-desc">Descrição</label><textarea id="e-desc"></textarea></div>
+      <div class="field s2"><label for="e-preco">Preço (R$)</label><input id="e-preco" type="number" step="0.01" min="0" inputmode="decimal" required></div>
+      <div class="field s2"><label for="e-ordem">Ordem</label><input id="e-ordem" type="number" step="1"></div>
+      <div class="field s2" style="justify-content: flex-end"><label class="check"><input type="checkbox" id="e-ativo"> Visível no site</label></div>
+      <div class="field s2"><label for="e-p"><span class="dot" style="--c: var(--m-prot)"></span>Proteína (g)</label><input id="e-p" type="number" step="0.1" min="0" inputmode="decimal"></div>
+      <div class="field s2"><label for="e-g"><span class="dot" style="--c: var(--m-fat)"></span>Gordura (g)</label><input id="e-g" type="number" step="0.1" min="0" inputmode="decimal"></div>
+      <div class="field s2"><label for="e-c"><span class="dot" style="--c: var(--m-carb)"></span>Carboidrato (g)</label><input id="e-c" type="number" step="0.1" min="0" inputmode="decimal"></div>
+    </div>
+    <datalist id="cats"></datalist>
+    <p class="msg err" id="e-msg"></p>
+    <div class="sheet-foot">
+      <button type="button" class="btn ghost" id="e-cancel">Cancelar</button>
+      <button class="btn" id="e-save">Salvar</button>
+    </div>
+  </form>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const SUPABASE_URL = "https://wkhfpujnynwflcimngjg.supabase.co";
+const SUPABASE_KEY = "sb_publishable_KJAWjztbbgQqlC6IYCYS4g_eeuVSd1z";
+const EMAIL_DOMAIN = "fitemassa.app";
+const ITEM_CATS = ["pratos", "lanches", "sucos"];
+const $ = id => document.getElementById(id);
+const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+let session = null, rows = [], tab = "item", editing = null, pendingDelete = null;
+
+try { session = JSON.parse(sessionStorage.getItem("fm-admin")); } catch (e) {}
+const keep = () => { try { session ? sessionStorage.setItem("fm-admin", JSON.stringify(session)) : sessionStorage.removeItem("fm-admin"); } catch (e) {} };
+
+function toast(t) { const el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 2600); }
+
+async function auth(grant, body) {
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=${grant}`, {
+    method: "POST", headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error_description || j.msg || "Falha no login");
+  session = { token: j.access_token, refresh: j.refresh_token, exp: Date.now() + (j.expires_in - 60) * 1000 };
+  keep();
+}
+async function api(path, opts = {}) {
+  if (session && Date.now() > session.exp) { try { await auth("refresh_token", { refresh_token: session.refresh }); } catch (e) { return logout("Sua sessão expirou. Entre de novo."); } }
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...opts, headers: {
+    apikey: SUPABASE_KEY, Authorization: `Bearer ${session.token}`, "Content-Type": "application/json", Prefer: "return=representation", ...(opts.headers || {}) } });
+  if (r.status === 401) return logout("Sua sessão expirou. Entre de novo.");
+  const j = await r.json().catch(() => null);
+  if (!r.ok) throw new Error((j && (j.message || j.hint)) || `Erro ${r.status}`);
+  return j;
+}
+
+$("login").addEventListener("submit", async e => {
+  e.preventDefault();
+  const user = $("l-user").value.trim(), pass = $("l-pass").value;
+  if (!user || !pass) { $("l-msg").className = "msg err"; $("l-msg").textContent = "Preencha usuário e senha."; return; }
+  $("l-btn").disabled = true; $("l-msg").className = "msg"; $("l-msg").textContent = "Entrando…";
+  try {
+    await auth("password", { email: user.includes("@") ? user : `${user.toLowerCase()}@${EMAIL_DOMAIN}`, password: pass });
+    $("l-pass").value = ""; showPanel();
+  } catch (err) {
+    $("l-msg").className = "msg err"; $("l-msg").textContent = "Usuário ou senha incorretos.";
+  } finally { $("l-btn").disabled = false; }
+});
+
+function logout(msg) {
+  session = null; keep();
+  $("panel").hidden = true; $("logout").hidden = true; $("login").hidden = false;
+  $("l-msg").className = msg ? "msg err" : "msg"; $("l-msg").textContent = msg || "";
+}
+$("logout").addEventListener("click", () => logout());
+
+async function showPanel() {
+  $("login").hidden = true; $("panel").hidden = false; $("logout").hidden = false;
+  await load();
+}
+async function load() {
+  try { rows = await api("dayse?select=*&order=ordem,nome") || []; render(); }
+  catch (e) { $("list").innerHTML = `<p class="empty">Não foi possível carregar: ${esc(e.message)}</p>`; }
+}
+
+function macrosHTML(r) {
+  return `<span><span class="dot" style="--c: var(--m-prot)"></span><b>${+r.proteina} g</b> prot</span>
+    <span><span class="dot" style="--c: var(--m-fat)"></span><b>${+r.gordura} g</b> gord</span>
+    <span><span class="dot" style="--c: var(--m-carb)"></span><b>${+r.carboidrato} g</b> carbo</span>`;
+}
+function render() {
+  const list = rows.filter(r => r.tipo === tab);
+  const groups = tab === "item" ? ITEM_CATS.concat([...new Set(list.map(r => r.categoria))].filter(c => !ITEM_CATS.includes(c))) : [...new Set(list.map(r => r.categoria))];
+  if (!list.length) { $("list").innerHTML = `<p class="empty">Nada cadastrado ainda. Toque em “Adicionar”.</p>`; return; }
+  $("list").innerHTML = groups.map(g => {
+    const items = list.filter(r => r.categoria === g); if (!items.length) return "";
+    return `<div class="group"><h3>${esc(g.charAt(0).toUpperCase() + g.slice(1))}</h3>${items.map(r => `
+      <div class="row${r.ativo ? "" : " off"}">
+        <div>
+          <div class="r-name">${esc(r.nome)} ${r.ativo ? "" : `<span class="chip">Oculto</span>`}</div>
+          <div class="r-meta"><span><b>${brl.format(+r.preco)}</b></span>${r.porcao ? `<span>${esc(r.porcao)}</span>` : ""}${macrosHTML(r)}</div>
+        </div>
+        <div class="r-act">${pendingDelete === r.id
+          ? `<span class="confirm">Excluir de vez?</span><button class="btn danger small" data-del-yes="${esc(r.id)}">Excluir</button><button class="btn ghost small" data-del-no>Não</button>`
+          : `<button class="btn ghost small" data-edit="${esc(r.id)}">Editar</button><button class="btn ghost small" data-del="${esc(r.id)}">Excluir</button>`}</div>
+      </div>`).join("")}</div>`;
+  }).join("");
+}
+
+document.addEventListener("click", async e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.tab) { tab = t.dataset.tab; pendingDelete = null; document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b === t)); render(); }
+  else if (t.dataset.edit) openEdit(rows.find(r => r.id === t.dataset.edit));
+  else if (t.id === "new") openEdit(null);
+  else if (t.dataset.del) { pendingDelete = t.dataset.del; render(); }
+  else if (t.dataset.delNo !== undefined) { pendingDelete = null; render(); }
+  else if (t.dataset.delYes) {
+    const id = t.dataset.delYes, nome = rows.find(r => r.id === id)?.nome; t.disabled = true;
+    try { await api(`dayse?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" }); rows = rows.filter(r => r.id !== id); pendingDelete = null; render(); toast(`${nome} excluído`); }
+    catch (err) { t.disabled = false; toast("Não foi possível excluir: " + err.message); }
+  }
+  else if (t.id === "e-cancel") closeEdit();
+});
+
+function openEdit(r) {
+  editing = r;
+  const isItem = (r ? r.tipo : tab) === "item";
+  $("e-title").textContent = r ? `Editar ${r.nome}` : (isItem ? "Novo item do cardápio" : "Novo ingrediente");
+  $("e-nome").value = r?.nome || "";
+  $("e-cat").value = r?.categoria || (isItem ? "pratos" : "");
+  $("e-porcao").value = r?.porcao || "";
+  const m = (r?.porcao || "").match(/^\s*([\d.,]+)\s*(g|ml)\b/i);
+  $("e-qtd").value = m ? m[1].replace(",", ".") : "";
+  $("e-un").value = m ? m[2].toLowerCase() : (r?.categoria === "sucos" ? "ml" : "g");
+  $("e-porcao-f").hidden = isItem; $("e-qtd-f").hidden = !isItem;
+  $("e-desc-f").hidden = !isItem;
+  $("e-desc").value = r?.descricao || "";
+  $("e-preco").value = r ? +r.preco : "";
+  $("e-ordem").value = r ? r.ordem : (Math.max(0, ...rows.map(x => x.ordem)) + 1);
+  $("e-ativo").checked = r ? r.ativo : true;
+  $("e-p").value = r ? +r.proteina : 0; $("e-g").value = r ? +r.gordura : 0; $("e-c").value = r ? +r.carboidrato : 0;
+  const cats = isItem ? ITEM_CATS : [...new Set(rows.filter(x => x.tipo === "ingrediente").map(x => x.categoria))];
+  $("cats").innerHTML = cats.map(c => `<option value="${esc(c)}">`).join("");
+  $("e-msg").textContent = "";
+  $("ov").hidden = false; document.body.style.overflow = "hidden"; $("e-nome").focus();
+}
+function closeEdit() { $("ov").hidden = true; document.body.style.overflow = ""; editing = null; }
+$("ov").addEventListener("click", e => { if (e.target.id === "ov") closeEdit(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("ov").hidden) closeEdit(); });
+
+const slug = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
+$("edit").addEventListener("submit", async e => {
+  e.preventDefault();
+  const isItem = (editing ? editing.tipo : tab) === "item";
+  const nome = $("e-nome").value.trim(), cat = $("e-cat").value.trim(), preco = parseFloat($("e-preco").value);
+  if (!nome || !cat || !(preco >= 0)) { $("e-msg").textContent = "Preencha nome, categoria e preço."; return; }
+  if (isItem && !ITEM_CATS.includes(cat)) { $("e-msg").textContent = "Para itens do cardápio, a categoria precisa ser pratos, lanches ou sucos."; return; }
+  const num = id => Math.max(0, parseFloat($(id).value) || 0);
+  const data = { nome, categoria: cat, porcao: isItem ? ($("e-qtd").value ? `${+$("e-qtd").value} ${$("e-un").value}` : null) : ($("e-porcao").value.trim() || null), descricao: isItem ? ($("e-desc").value.trim() || null) : null,
+    preco, ordem: parseInt($("e-ordem").value, 10) || 0, ativo: $("e-ativo").checked, proteina: num("e-p"), gordura: num("e-g"), carboidrato: num("e-c") };
+  $("e-save").disabled = true;
+  try {
+    if (editing) {
+      const [row] = await api(`dayse?id=eq.${encodeURIComponent(editing.id)}`, { method: "PATCH", body: JSON.stringify(data) });
+      rows = rows.map(r => r.id === row.id ? row : r);
+    } else {
+      let id = slug(nome) || "item"; if (rows.some(r => r.id === id)) id += "-" + Date.now().toString(36).slice(-4);
+      const [row] = await api("dayse", { method: "POST", body: JSON.stringify({ id, tipo: isItem ? "item" : "ingrediente", ...data }) });
+      rows.push(row);
+    }
+    rows.sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome));
+    closeEdit(); render(); toast(`${nome} salvo`);
+  } catch (err) { $("e-msg").textContent = "Não foi possível salvar: " + err.message; }
+  finally { $("e-save").disabled = false; }
+});
+
+if (session && session.token) showPanel();
+</script>
+</body>
+</html>
