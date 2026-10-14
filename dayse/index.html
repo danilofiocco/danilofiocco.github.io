@@ -150,9 +150,15 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 .field input[readonly] { background: transparent; border-style: dashed; color: var(--muted); cursor: not-allowed }
 .hint { font-size: 12px; color: var(--muted); line-height: 1.35 }
 .field input:user-invalid { border-color: #c2412d }
-.send { display: flex; align-items: center; justify-content: center; gap: 10px; text-align: center; text-decoration: none; margin-top: 18px; background: #1f8f4e; color: #fff; font-weight: 700; padding: 14px; border-radius: 10px }
+.send { font: inherit; border: 0; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; text-align: center; text-decoration: none; margin-top: 18px; background: #1f8f4e; color: #fff; font-weight: 700; padding: 14px; border-radius: 10px }
 .send .wa { width: 22px; height: 22px; flex: none }
 .send:hover { filter: brightness(1.07) }
+.send:disabled { opacity: .6; cursor: wait }
+.done { text-align: center; max-width: 420px }
+.done svg { width: 64px; height: 64px; color: #1f8f4e; margin: 6px auto 8px; display: block }
+.done h2 { margin: 0 0 8px }
+.done p { margin: 0 0 18px; color: var(--muted); font-size: 15.5px }
+.done .b-add { width: 100% }
 .form-tools { display: flex; justify-content: space-between; align-items: center; gap: 8px 16px; flex-wrap: wrap; margin-top: 12px; font-size: 12.5px; color: var(--muted) }
 .eta { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 16px 0 0; padding-top: 14px; border-top: 1px solid var(--line); font-size: 14.5px; color: var(--ink) }
 .eta svg { width: 30px; height: 30px; color: var(--accent); flex: none }
@@ -237,7 +243,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
         <div class="row small"><span>Subtotal</span><span id="subtotal"></span></div>
         <div class="row big"><span>Total</span><span id="total"></span></div>
       </div>
-      <p class="note" id="note">Você confirma o pedido e a entrega pelo WhatsApp.</p>
+      <p class="note" id="note">Depois do pedido, entraremos em contato pelo WhatsApp para o pagamento.</p>
       </div>
       <button class="checkout" id="checkout" disabled>Pronto</button>
     </aside>
@@ -277,6 +283,14 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
   </div>
 </div>
 
+<div class="overlay" id="done-overlay" hidden>
+  <div class="sheet done" role="dialog" aria-modal="true" aria-labelledby="done-title">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h2 id="done-title">Pedido recebido</h2>
+    <p>Recebemos seu pedido. Em breve entraremos em contato para efetuar o pagamento. Obrigado.</p>
+    <button type="button" class="b-add" id="done-close">Voltar ao cardápio</button>
+  </div>
+</div>
 <div class="overlay" id="overlay" hidden>
   <form class="sheet" id="order-form" novalidate role="dialog" aria-modal="true" aria-labelledby="form-title">
     <div class="sheet-head">
@@ -295,8 +309,8 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
       <div class="field w2 keep"><label for="f-cep">CEP <small>(opcional)</small></label><input id="f-cep" name="cep" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000"></div>
     </div>
     <div class="form-tools"><span id="saved-note">Seus dados ficam salvos neste aparelho para o próximo pedido.</span><button type="button" class="back" id="form-clear">Limpar formulário</button></div>
-    <a class="send" id="send" href="#" target="_blank" rel="noopener"><svg class="wa" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2Zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 4.54 0 8.24 3.7 8.24 8.24 0 4.55-3.7 8.24-8.24 8.24Zm4.52-6.17c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.16.04-.31-.02-.43-.06-.13-.56-1.35-.76-1.84-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07s.88 2.4 1 2.56c.13.17 1.74 2.66 4.22 3.73.59.25 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.08.15-1.18-.06-.11-.23-.17-.48-.29Z"/></svg><span>Finalizar pedido</span></a>
-    <p class="form-msg" id="form-msg">Abre o WhatsApp com o pedido pronto. Lá, é só tocar em enviar.</p>
+    <button type="button" class="send" id="send">Finalizar pedido</button>
+    <p class="form-msg" id="form-msg">Depois de finalizar, entraremos em contato pelo WhatsApp para o pagamento.</p>
     <p class="eta"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17" r="3"/><circle cx="18.5" cy="17" r="3"/><path d="M8.5 17h6l2.5-6h-4.5M14 6h2.5l2 5M3 12h6l2 3"/><path d="M9 9h3"/></g></svg><span>Prazo de entrega de até <b id="eta">1h30m</b></span></p>
   </form>
 </div>
@@ -526,36 +540,18 @@ document.addEventListener("click", e => {
   else if (t.id === "handle") toggleCart();
   else if (t.id === "checkout" || t.id === "checkout-m") openForm();
   else if (t.id === "form-back") closeForm();
+  else if (t.id === "done-close") closeOverlay("done-overlay");
 });
 
-const WHATSAPP = "5515991092915";
 const form = document.getElementById("order-form");
 const overlay = document.getElementById("overlay");
 const val = n => form.elements[n].value.trim();
 function orderLines() {
   return Object.keys(cart).filter(byId).map(id => ({ d: byId(id), q: cart[id] }));
 }
-function buildMessage() {
-  const lines = orderLines();
-  const total = lines.reduce((s, l) => s + l.q * l.d.price, 0);
-  const addr = [`${val("rua")}, ${val("numero")}`, val("complemento")].filter(Boolean).join(" - ");
-  return [
-    "Olá! Quero fazer um pedido:", "",
-    ...lines.map(l => `${l.q}x ${l.d.name} (${brl.format(l.q * l.d.price)})${l.d.custom ? ": " + plateDetail(l.d) : ""}`),
-    `Total: ${brl.format(total)}`, "",
-    "Dados de entrega:",
-    `Nome: ${val("nome")}`,
-    `WhatsApp: ${val("whatsapp")}`,
-    `Endereço: ${addr}`,
-    `Bairro: ${val("bairro")}`,
-    `Cidade: ${val("cidade")}`,
-    val("cep") ? `CEP: ${val("cep")}` : null
-  ].filter(x => x !== null).join("\n");
-}
-// Registra o pedido na tabela "dayse_pedidos" para aparecer na tela de Pedidos do admin.
-// O mesmo pedido enviado de novo em menos de 10 minutos não é duplicado.
-function saveOrder() {
-  const lines = orderLines(); if (!lines.length || !SUPABASE_URL) return;
+// Registra o pedido na tabela "dayse_pedidos"; ele aparece na tela de Pedidos do admin.
+async function saveOrder() {
+  const lines = orderLines(); if (!lines.length) throw new Error("carrinho vazio");
   const entrega = {}; ["whatsapp", "rua", "numero", "complemento", "bairro", "cidade", "cep"].forEach(n => { if (val(n)) entrega[n] = val(n); });
   const order = {
     nome: val("nome"), entrega,
@@ -563,15 +559,9 @@ function saveOrder() {
     pratos: lines.reduce((n, l) => n + l.q, 0),
     total: Math.round(lines.reduce((s, l) => s + l.q * l.d.price, 0) * 100) / 100
   };
-  const key = JSON.stringify(order);
-  try { const last = JSON.parse(sessionStorage.getItem("fm-ultimo-pedido") || "null"); if (last && last.key === key && Date.now() - last.t < 600000) return; } catch (e) {}
-  fetch(`${SUPABASE_URL}/rest/v1/dayse_pedidos`, { method: "POST", keepalive: true,
-    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json", Prefer: "return=minimal" }, body: key })
-    .then(r => { if (r.ok) try { sessionStorage.setItem("fm-ultimo-pedido", JSON.stringify({ key, t: Date.now() })); } catch (e) {} })
-    .catch(e => console.warn("Pedido não registrado no painel.", e));
-}
-function updateLink() {
-  document.getElementById("send").href = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(buildMessage())}`;
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/dayse_pedidos`, { method: "POST",
+    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify(order) });
+  if (!r.ok) throw new Error("HTTP " + r.status);
 }
 function openForm() {
   const lines = orderLines();
@@ -582,7 +572,6 @@ function openForm() {
     `<li class="sum"><span>Total</span><span>${brl.format(total)}</span></li>`;
   const msg = document.getElementById("form-msg");
   msg.className = "form-msg"; msg.textContent = "Abre o WhatsApp com o pedido pronto. Lá, é só tocar em enviar.";
-  updateLink();
   overlay.hidden = false;
   document.body.style.overflow = "hidden";
   const empty = form.querySelector(":invalid");
@@ -668,7 +657,6 @@ function clearForm() {
   form.reset();
   try { localStorage.removeItem(FORM_KEY); } catch (e) {}
   fmtWhats();
-  updateLink();
   const msg = document.getElementById("form-msg");
   msg.className = "form-msg"; msg.textContent = "Formulário limpo.";
   document.getElementById("f-nome").focus();
@@ -684,17 +672,18 @@ function fmtWhats() {
 }
 whats.addEventListener("input", fmtWhats);
 fmtWhats();
-form.addEventListener("input", () => { saveForm(); updateLink(); });
+form.addEventListener("input", saveForm);
 form.addEventListener("submit", e => e.preventDefault());
 overlay.addEventListener("click", e => { if (e.target === overlay) closeForm(); });
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
-  if (!document.getElementById("i-overlay").hidden) closeOverlay("i-overlay");
+  if (!document.getElementById("done-overlay").hidden) closeOverlay("done-overlay");
+  else if (!document.getElementById("i-overlay").hidden) closeOverlay("i-overlay");
   else if (!document.getElementById("b-overlay").hidden) closeOverlay("b-overlay");
   else if (!overlay.hidden) closeForm();
 });
-["b-overlay", "i-overlay"].forEach(id => document.getElementById(id).addEventListener("click", e => { if (e.target.id === id) closeOverlay(id); }));
-document.getElementById("send").addEventListener("click", e => {
+["b-overlay", "i-overlay", "done-overlay"].forEach(id => document.getElementById(id).addEventListener("click", e => { if (e.target.id === id) closeOverlay(id); }));
+document.getElementById("send").addEventListener("click", async e => {
   const msg = document.getElementById("form-msg");
   if (!form.checkValidity()) {
     e.preventDefault();
@@ -704,10 +693,17 @@ document.getElementById("send").addEventListener("click", e => {
     bad.focus();
     return;
   }
-  updateLink();
-  saveOrder();
-  msg.className = "form-msg";
-  msg.textContent = "Abrimos o WhatsApp numa nova aba. Confira a mensagem e toque em enviar para concluir o pedido.";
+  const btn = e.currentTarget;
+  btn.disabled = true; btn.textContent = "Enviando…";
+  msg.className = "form-msg"; msg.textContent = "Enviando seu pedido…";
+  try {
+    await saveOrder();
+    Object.keys(cart).forEach(id => delete cart[id]); save(); render();
+    closeForm(); openOverlay("done-overlay"); document.getElementById("done-close").focus();
+    msg.textContent = "Depois de finalizar, entraremos em contato pelo WhatsApp para o pagamento.";
+  } catch (err) {
+    msg.className = "form-msg err"; msg.textContent = "Não conseguimos enviar seu pedido. Verifique sua internet e tente de novo.";
+  } finally { btn.disabled = false; btn.textContent = "Finalizar pedido"; }
 });
 document.addEventListener("change", e => { if (e.target.dataset.qty) setQty(e.target.dataset.qty, e.target.value); });
 

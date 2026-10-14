@@ -123,8 +123,26 @@ svg.i { width: 16px; height: 16px; flex: none }
 .sel { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px }
 .sel select { padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-weight: 700 }
 /* pedidos */
-.board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start }
-@media (max-width: 860px) { .board { grid-template-columns: minmax(0, 1fr) } }
+body.wide .wrap, body.wide .band-in { max-width: 1560px }
+.board { display: grid; grid-template-columns: repeat(5, minmax(240px, 1fr)); gap: 12px; align-items: start; overflow-x: auto; padding-bottom: 8px }
+@media (max-width: 860px) { .board { grid-template-columns: minmax(0, 1fr); overflow: visible } }
+.print-btn { width: 100%; margin: 4px 0 2px }
+#print-area { display: none }
+@media print {
+  body > *:not(#print-area) { display: none !important }
+  body { background: #fff }
+  #print-area { display: block; color: #000; font-family: "Courier New", ui-monospace, monospace; font-size: 12pt }
+  .label { page-break-after: always; break-after: page; padding: 4mm; max-width: 100mm }
+  .label:last-child { page-break-after: auto; break-after: auto }
+  .label h1 { font-family: Georgia, serif; font-weight: 400; font-size: 14pt; margin: 0 0 2mm }
+  .label .big { font-size: 20pt; font-weight: 700; margin: 0 }
+  .label .to { font-size: 14pt; font-weight: 700; margin: 3mm 0 1mm; text-transform: uppercase }
+  .label p { margin: 0 0 1mm }
+  .label ul { list-style: none; padding: 2mm 0; margin: 3mm 0 0; border-top: 1px dashed #000; border-bottom: 1px dashed #000 }
+  .label li { display: flex; justify-content: space-between; gap: 4mm }
+  .label small { display: block; font-size: 9.5pt }
+  .label .tot { display: flex; justify-content: space-between; font-weight: 700; margin-top: 2mm }
+}
 .col { background: color-mix(in srgb, var(--line) 45%, transparent); border-radius: 14px; padding: 12px 12px 4px; min-height: 160px; transition: background .15s, box-shadow .15s }
 .col.over { background: color-mix(in srgb, var(--brand-gold) 22%, transparent); box-shadow: inset 0 0 0 2px var(--brand-gold) }
 .col h3 { margin: 0 0 4px; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px }
@@ -198,6 +216,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-ticket" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 8h6M9 12h6M9 16h3"/></symbol>
   <symbol id="i-grip" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></g></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M7 8V3h10v5M7 17H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3M7 14h10v7H7z"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 7v5l3 2"/></symbol>
 </svg>
 
@@ -228,6 +247,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <div class="board" id="board">
       <div class="col" data-status="novo"><h3>Novos pedidos <span class="n" id="n-novo">0</span></h3><div class="col-body" id="c-novo"></div></div>
       <div class="col" data-status="preparo"><h3>Pago · Em preparação <span class="n" id="n-preparo">0</span></h3><p class="col-note">Verifique com o cliente se o pedido foi realmente enviado e pago antes de movê-lo aqui.</p><div class="col-body" id="c-preparo"></div></div>
+      <div class="col" data-status="etiquetas"><h3>Imprimir etiquetas <span class="n" id="n-etiquetas">0</span></h3><button type="button" class="btn small print-btn" id="print-btn"><svg class="i"><use href="#i-print"/></svg>Imprimir</button><div class="col-body" id="c-etiquetas"></div></div>
+      <div class="col" data-status="enviado"><h3>Enviados <span class="n" id="n-enviado">0</span></h3><div class="col-body" id="c-enviado"></div></div>
       <div class="col" data-status="concluido"><h3>Concluído <span class="n" id="n-concluido">0</span></h3><div class="col-body" id="c-concluido"></div></div>
     </div>
   </section>
@@ -309,6 +330,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div id="print-area" aria-hidden="true"></div>
 
 <script>
 const SUPABASE_URL = "https://wkhfpujnynwflcimngjg.supabase.co";
@@ -388,6 +410,7 @@ function show(v) {
   $("v-list").hidden = v !== "item" && v !== "ingrediente"; $("v-hours").hidden = v !== "horario"; $("v-orders").hidden = v !== "pedidos";
   $("list-title").textContent = v === "item" ? "Pratos" : "Ingredientes";
   renderList(); if (v === "pedidos") renderOrders();
+  document.body.classList.toggle("wide", v === "pedidos");
 }
 
 /* ---------- lista ---------- */
@@ -691,13 +714,15 @@ async function pickCard(modo) {
 setInterval(renderState, 20000);
 
 /* ---------- pedidos ---------- */
-const STATUS = ["novo", "preparo", "concluido"];
-const NEXT = { novo: ["preparo", "Pago · em preparação"], preparo: ["concluido", "Concluído"] };
+const STATUS = ["novo", "preparo", "etiquetas", "enviado", "concluido"];
+const NEXT = { novo: ["preparo", "Pago · em preparação"], preparo: ["etiquetas", "Imprimir etiquetas"], etiquetas: ["enviado", "Enviados"], enviado: ["concluido", "Concluído"] };
+const PIX_KEY = "teste@teste.com";
+const EMPTY = { novo: "Nenhum pedido novo.", preparo: "Nada em preparação.", etiquetas: "Nenhuma etiqueta para imprimir.", enviado: "Nenhum pedido a caminho.", concluido: "Nenhum pedido concluído ainda." };
 async function loadOrders() {
   if (!session || drag) return;
   try {
     const [open, done] = await Promise.all([
-      api("dayse_pedidos?select=*&status=in.(novo,preparo)&order=criado_em"),
+      api("dayse_pedidos?select=*&status=in.(novo,preparo,etiquetas,enviado)&order=criado_em"),
       api("dayse_pedidos?select=*&status=eq.concluido&order=status_em.desc&limit=30")]);
     const all = (open || []).concat(done || []);
     const fresh = seenOrders ? all.filter(o => !seenOrders.has(o.id)).map(o => o.id) : [];
@@ -708,10 +733,17 @@ async function loadOrders() {
 const hhmm = iso => { const d = new Date(iso), today = new Date().toDateString() === d.toDateString();
   return d.toLocaleString("pt-BR", today ? { hour: "2-digit", minute: "2-digit" } : { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); };
 // Link para abrir a conversa com o cliente no WhatsApp (número brasileiro com DDD).
-function waLink(num) {
+// A conversa já abre com a mensagem de cobrança: número do pedido, itens, total e a chave Pix.
+function orderText(o) {
+  return [`Olá, recebemos seu pedido #${o.id}:`, "",
+    ...(o.itens || []).map(i => `${+i.qtd}x ${i.nome} (${brl.format(i.qtd * i.preco)})${i.detalhe ? ": " + i.detalhe : ""}`),
+    `Total: ${brl.format(+o.total)}`, "",
+    `Efetue o pagamento via Pix para ${PIX_KEY} e começaremos a preparação.`].join("\n");
+}
+function waLink(num, o) {
   let d = String(num || "").replace(/\D/g, ""); if (!d) return "";
   if (d.length <= 11) d = "55" + d;
-  return `<a class="tk-wa" href="https://wa.me/${d}" target="_blank" rel="noopener"><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm5.8 14.1c-.24.68-1.4 1.3-1.94 1.35-.5.05-1.12.07-1.8-.11-.42-.13-.95-.31-1.63-.6-2.87-1.24-4.74-4.13-4.88-4.32-.14-.19-1.17-1.55-1.17-2.96s.74-2.1 1-2.39c.26-.28.57-.35.76-.35h.55c.18 0 .42-.07.65.5.24.57.81 1.98.88 2.12.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.17-.3.37-.43.5-.14.14-.29.3-.12.58.17.28.74 1.22 1.59 1.97 1.09.97 2.01 1.27 2.29 1.41.28.14.45.12.62-.07.17-.19.71-.83.9-1.12.19-.28.38-.24.64-.14.26.09 1.66.78 1.94.92.28.14.47.21.54.33.07.12.07.68-.17 1.36z"/></svg>${esc(num)}</a>`;
+  return `<a class="tk-wa" href="https://wa.me/${d}?text=${encodeURIComponent(orderText(o))}" target="_blank" rel="noopener"><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm5.8 14.1c-.24.68-1.4 1.3-1.94 1.35-.5.05-1.12.07-1.8-.11-.42-.13-.95-.31-1.63-.6-2.87-1.24-4.74-4.13-4.88-4.32-.14-.19-1.17-1.55-1.17-2.96s.74-2.1 1-2.39c.26-.28.57-.35.76-.35h.55c.18 0 .42-.07.65.5.24.57.81 1.98.88 2.12.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.17-.3.37-.43.5-.14.14-.29.3-.12.58.17.28.74 1.22 1.59 1.97 1.09.97 2.01 1.27 2.29 1.41.28.14.45.12.62-.07.17-.19.71-.83.9-1.12.19-.28.38-.24.64-.14.26.09 1.66.78 1.94.92.28.14.47.21.54.33.07.12.07.68-.17 1.36z"/></svg>${esc(num)}</a>`;
 }
 function ticketHTML(o, fresh) {
   const e = o.entrega || {}, addr = [[e.rua, e.numero].filter(Boolean).join(", "), e.complemento, e.bairro, e.cidade].filter(Boolean).join(" · ");
@@ -720,7 +752,7 @@ function ticketHTML(o, fresh) {
     <div class="tk-timer" data-start="${esc(o.criado_em)}"${done ? ` data-end="${esc(o.status_em)}"` : ""}></div>
     <div class="tk-head"><svg class="tk-grip" aria-hidden="true"><use href="#i-grip"/></svg><b>#${o.id}</b><time datetime="${esc(o.criado_em)}">${hhmm(o.criado_em)}</time></div>
     <div class="tk-name">${esc(o.nome)}</div>
-    ${waLink(e.whatsapp)}
+    ${waLink(e.whatsapp, o)}
     <ul class="tk-items">${(o.itens || []).map(i => `<li><span>${+i.qtd}x ${esc(i.nome)}${i.detalhe ? `<small>${esc(i.detalhe)}</small>` : ""}</span><span>${brl.format(i.qtd * i.preco)}</span></li>`).join("")}</ul>
     <div class="tk-total"><span>TOTAL</span><span>${brl.format(+o.total)}</span></div>
     ${addr || e.referencia || e.cep ? `<div class="tk-addr">${esc(addr)}${e.cep ? `<br>CEP ${esc(e.cep)}` : ""}${e.referencia ? `<br>Ref.: ${esc(e.referencia)}` : ""}</div>` : ""}
@@ -740,15 +772,15 @@ function tickTimers() {
 }
 setInterval(tickTimers, 1000);
 function renderOrders(fresh = []) {
-  const pend = orders.filter(o => o.status !== "concluido");
+  const pend = orders.filter(o => o.status === "novo" || o.status === "preparo");
   const pratos = pend.reduce((n, o) => n + (o.pratos || 0), 0);
   $("ped-count").textContent = `(${pratos})`;
   if (view !== "pedidos") return;
-  const by = st => orders.filter(o => o.status === st).sort((a, b) => st === "concluido" ? b.status_em.localeCompare(a.status_em) : st === "preparo" ? a.status_em.localeCompare(b.status_em) : a.criado_em.localeCompare(b.criado_em));
+  const by = st => orders.filter(o => o.status === st).sort((a, b) => st === "concluido" ? b.status_em.localeCompare(a.status_em) : st === "novo" ? a.criado_em.localeCompare(b.criado_em) : a.status_em.localeCompare(b.status_em));
   STATUS.forEach(st => {
     const list = by(st);
     $("n-" + st).textContent = list.length;
-    $("c-" + st).innerHTML = list.length ? list.map(o => ticketHTML(o, fresh.includes(o.id))).join("") : `<p class="col-empty">${st === "novo" ? "Nenhum pedido novo." : st === "preparo" ? "Nada em preparação." : "Nenhum pedido concluído ainda."}</p>`;
+    $("c-" + st).innerHTML = list.length ? list.map(o => ticketHTML(o, fresh.includes(o.id))).join("") : `<p class="col-empty">${EMPTY[st]}</p>`;
   });
   tickTimers();
 }
@@ -759,6 +791,22 @@ async function moveOrder(id, status) {
   try { const [row] = await api(`dayse_pedidos?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ status, status_em: o.status_em }) }); Object.assign(o, row); renderOrders(); }
   catch (err) { Object.assign(o, before); renderOrders(); toast("Não foi possível mover o pedido: " + err.message); }
 }
+// Etiquetas: uma por pedido da coluna "Imprimir etiquetas", cada uma numa página.
+function labelHTML(o) {
+  const e = o.entrega || {};
+  return `<section class="label"><h1>Fit &amp; Massa</h1><p class="big">Pedido #${o.id}</p>
+    <p class="to">${esc(o.nome)}</p>${e.whatsapp ? `<p>WhatsApp: ${esc(e.whatsapp)}</p>` : ""}
+    <p>${esc([[e.rua, e.numero].filter(Boolean).join(", "), e.complemento].filter(Boolean).join(" - "))}</p>
+    <p>${esc([e.bairro, e.cidade].filter(Boolean).join(" · "))}${e.cep ? ` · CEP ${esc(e.cep)}` : ""}</p>
+    <ul>${(o.itens || []).map(i => `<li><span>${+i.qtd}x ${esc(i.nome)}${i.detalhe ? `<small>${esc(i.detalhe)}</small>` : ""}</span><span>${brl.format(i.qtd * i.preco)}</span></li>`).join("")}</ul>
+    <p class="tot"><span>TOTAL</span><span>${brl.format(+o.total)}</span></p></section>`;
+}
+$("print-btn").addEventListener("click", () => {
+  const list = orders.filter(o => o.status === "etiquetas").sort((a, b) => a.status_em.localeCompare(b.status_em));
+  if (!list.length) { toast("Não há pedidos na coluna Imprimir etiquetas."); return; }
+  $("print-area").innerHTML = list.map(labelHTML).join("");
+  print();
+});
 $("board").addEventListener("click", e => { const b = e.target.closest("[data-move]"); if (!b) return; const o = orders.find(x => x.id === +b.dataset.move); if (o && NEXT[o.status]) moveOrder(o.id, NEXT[o.status][0]); });
 
 // Arrastar: com o mouse, pelo card inteiro; no toque, pela faixa de cima do card (para a página continuar rolando).
