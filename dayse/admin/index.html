@@ -8,64 +8,74 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Nunito+Sans:wght@400;600;700;800&display=swap">
 <style>
-/* Layout: faixa da marca; abaixo, abas Cardápio/Ingredientes com lista editável; formulário em painel sobreposto */
+/* Layout: faixa da marca com o menu principal (Pratos, Ingredientes, Horário); abaixo, a tela escolhida; painéis sobrepostos para edição e lixeira */
 :root {
   --brand: #214b3d; --brand-gold: #c6a15b; --brand-cream: #f2ece0;
   --bg: #f5f4ef; --surface: #ffffff; --ink: #1b2e27; --muted: #5d6c64; --line: #e0ddd2;
-  --danger: #b23a2a; --ok: #2f7a5c;
+  --danger: #b23a2a; --ok: #2f7a5c; --closed: #b3261e;
   --m-prot: #2f7a5c; --m-fat: #b5654a; --m-carb: #d4a64a;
   --display: "Marcellus", "Palatino Linotype", Georgia, serif;
   --body: "Nunito Sans", "Segoe UI", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) { :root {
   --bg: #0f1c17; --surface: #172a22; --ink: #ece7dc; --muted: #a3b2aa; --line: #2a3f35;
-  --danger: #e07a6a; --ok: #5fb38c; --m-prot: #5fb38c; --m-fat: #d98468; --m-carb: #e0b964; color-scheme: dark } }
+  --danger: #e07a6a; --ok: #5fb38c; --closed: #e5675c; --m-prot: #5fb38c; --m-fat: #d98468; --m-carb: #e0b964; color-scheme: dark } }
 * { box-sizing: border-box }
 [hidden] { display: none !important }
 html, body { margin: 0 }
 body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45 }
-.band { background: var(--brand); color: var(--brand-cream); padding: 14px max(16px, env(safe-area-inset-right, 0px)) 14px max(16px, env(safe-area-inset-left, 0px)) }
-.band-in { max-width: 980px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px }
-.band h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 22px }
-.band h1 span { color: var(--brand-gold) }
-.wrap { max-width: 980px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px)) }
 button, input, select, textarea { font: inherit; color: inherit }
-.btn { border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 700; cursor: pointer; background: var(--brand); color: var(--brand-cream); box-shadow: inset 0 0 0 2px var(--brand-gold) }
+svg.i { width: 16px; height: 16px; flex: none }
+
+/* faixa e menu principal */
+.band { background: var(--brand); color: var(--brand-cream); padding: 12px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)) }
+.band-in { max-width: 980px; margin: 0 auto; display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap }
+.band h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 22px; white-space: nowrap }
+.band h1 span { color: var(--brand-gold) }
+.nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1 }
+.nav button { border: 1px solid rgba(242,236,224,.35); background: transparent; color: var(--brand-cream); border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px }
+.nav button[aria-current="true"] { background: var(--brand-cream); color: var(--brand); border-color: var(--brand-cream) }
+.state { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: rgba(242,236,224,.12) }
+.state::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c, #9aa) }
+
+.wrap { max-width: 980px; margin: 0 auto; padding: 22px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px)) }
+.btn { border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 700; cursor: pointer; background: var(--brand); color: var(--brand-cream); box-shadow: inset 0 0 0 2px var(--brand-gold); display: inline-flex; align-items: center; justify-content: center; gap: 6px }
 .btn.ghost { background: transparent; color: inherit; box-shadow: inset 0 0 0 1px currentColor }
 .btn.danger { background: var(--danger); color: #fff; box-shadow: none }
 .btn.small { padding: 6px 12px; font-size: 13.5px }
-.btn:disabled { opacity: .5; cursor: wait }
+.btn:disabled { opacity: .5; cursor: not-allowed }
 .band .btn.ghost { color: var(--brand-cream) }
+.badge { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 12px; font-weight: 800; display: inline-grid; place-items: center }
+.badge.zero { background: var(--line); color: var(--muted) }
+
 /* login */
 .login { max-width: 360px; margin: 48px auto; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 14px }
 .login h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 24px }
 .field { display: flex; flex-direction: column; gap: 4px; min-width: 0 }
-.field label { font-size: 13px; font-weight: 700 }
+.field label, .flabel { font-size: 13px; font-weight: 700 }
 .field input, .field select, .field textarea { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); width: 100% }
 .field textarea { min-height: 70px; resize: vertical }
 .msg { font-size: 13.5px; color: var(--muted); margin: 0 }
 .msg.err { color: var(--danger) }
-/* lista */
-.bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 16px }
-.tabs { display: flex; gap: 6px; flex-wrap: wrap }
-.tab { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 16px; font-weight: 700; cursor: pointer }
-.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+
+/* lista de pratos e ingredientes */
+.bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 8px }
+.bar h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 24px }
 .tools { display: flex; gap: 8px; flex-wrap: wrap }
-.tools select { padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface) }
-.group h3 { font-family: var(--display); font-weight: 400; font-size: 18px; margin: 22px 0 6px }
+.group h3 { font-family: var(--display); font-weight: 400; font-size: 18px; margin: 20px 0 6px }
 .row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px }
-.row.off > :not(.r-act) { opacity: .55 }
+.row.off { background: transparent; border-style: dashed }
+.row.off > :not(.r-act), .row.off .r-act > .btn { opacity: .5 }
 .r-name { font-weight: 800 }
 .r-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 2px }
 .r-meta b { color: var(--ink) }
 .chip { font-size: 11.5px; font-weight: 800; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); text-transform: uppercase; letter-spacing: .05em }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; background: var(--c) }
 .r-act { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end }
-.confirm { font-size: 13px; font-weight: 700; color: var(--danger) }
 .thumb { width: 56px; height: 56px; border-radius: 50%; background: var(--bg); border: 2px dashed var(--line); display: grid; place-items: center; overflow: hidden; font-family: var(--display); font-size: 20px; color: var(--muted) }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block }
 .thumb.has { border-style: solid; border-color: var(--brand-gold) }
-.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; padding-left: 4px }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; padding-left: 4px; position: relative }
 .switch input { position: absolute; opacity: 0; width: 1px; height: 1px }
 .switch .track { width: 40px; height: 22px; border-radius: 999px; background: var(--line); position: relative; transition: background .15s; flex: none }
 .switch .track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .15s }
@@ -74,31 +84,76 @@ button, input, select, textarea { font: inherit; color: inherit }
 .switch input:focus-visible + .track { outline: 3px solid var(--brand-gold); outline-offset: 2px }
 .switch input:disabled + .track { opacity: .5 }
 @media (prefers-reduced-motion: reduce) { .switch .track, .switch .track::after { transition: none } }
-@media (max-width: 560px) { .row { grid-template-columns: 56px minmax(0, 1fr) } .r-act { grid-column: 1 / -1; justify-content: flex-start } .switch { margin-left: auto } }
-.photo { display: flex; align-items: center; gap: 14px; flex-wrap: wrap }
-.photo .thumb { width: 84px; height: 84px; font-size: 28px }
-.photo-btns { display: flex; gap: 8px; flex-wrap: wrap }
-.file-btn { position: relative; overflow: hidden }
-.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer }
+@media (max-width: 560px) { .row { grid-template-columns: 56px minmax(0, 1fr) } .r-act { grid-column: 1 / -1; justify-content: flex-start } .r-act .switch { margin-left: auto } }
 .empty { color: var(--muted); padding: 24px 0 }
-/* painel de edição */
+
+/* horário de funcionamento */
+.now { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 16px; font-size: 14.5px }
+.now strong { color: var(--c) }
+.cards { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; align-items: start }
+@media (max-width: 760px) { .cards { grid-template-columns: minmax(0, 1fr) } }
+.card { background: var(--surface); border: 2px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px; cursor: pointer }
+.card[aria-checked="true"] { border-color: var(--brand-gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-gold) 25%, transparent) }
+.card-head { display: flex; align-items: center; gap: 10px }
+.radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--muted); display: grid; place-items: center; flex: none }
+.card[aria-checked="true"] .radio { border-color: var(--brand-gold) }
+.card[aria-checked="true"] .radio::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--brand-gold) }
+.card h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 19px }
+.card p { margin: 0; font-size: 13.5px; color: var(--muted) }
+.days { display: flex; flex-direction: column }
+.day { display: grid; grid-template-columns: 92px auto minmax(0, 1fr); gap: 8px 12px; align-items: center; padding-block: 8px; border-top: 1px solid var(--line) }
+.day-name { font-weight: 800 }
+.times { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13.5px; color: var(--muted) }
+.times input { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); width: 104px }
+.times input:disabled { opacity: .45 }
+.next { font-size: 12px; color: var(--muted) }
+@media (max-width: 460px) { .day { grid-template-columns: 1fr auto } .times { grid-column: 1 / -1 } }
+.big { padding: 18px; font-size: 17px; border-radius: 14px }
+.big.open { background: var(--ok); color: #fff; box-shadow: none }
+.big.close { background: var(--closed); color: #fff; box-shadow: none }
+
+/* painéis */
 .overlay { position: fixed; inset: 0; z-index: 40; background: rgba(10,20,14,.55); display: flex; align-items: center; justify-content: center; padding: 16px }
 .sheet { background: var(--surface); border-radius: 16px; width: 100%; max-width: 560px; max-height: 100%; overflow-y: auto; padding: 22px }
 .sheet h2 { margin: 0 0 14px; font-family: var(--display); font-weight: 400; font-size: 22px }
 .grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px }
 .s6 { grid-column: span 6 } .s3 { grid-column: span 3 } .s2 { grid-column: span 2 }
 @media (max-width: 480px) { .s3 { grid-column: span 6 } }
-.unit { display: flex; gap: 6px } .unit input { flex: 1; min-width: 0 } .field .unit select { width: auto; flex: none; padding: 10px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg) }
 .check { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px }
 .sheet-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; flex-wrap: wrap }
-.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; z-index: 60 }
-button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--brand-gold); outline-offset: 2px }
+.unit { display: flex; gap: 6px } .unit input { flex: 1; min-width: 0 }
+.field .unit select { width: auto; flex: none; padding: 10px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg) }
+.photo { display: flex; align-items: center; gap: 14px; flex-wrap: wrap }
+.photo .thumb { width: 84px; height: 84px; font-size: 28px }
+.photo-btns { display: flex; gap: 8px; flex-wrap: wrap }
+.file-btn { position: relative; overflow: hidden }
+.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer }
+.trash-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; padding-block: 10px; border-top: 1px solid var(--line) }
+.trash-row .r-meta { margin: 0 }
+.confirm { font-size: 13px; font-weight: 700; color: var(--danger) }
+@media (max-width: 480px) { .trash-row { grid-template-columns: minmax(0, 1fr) } }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; z-index: 60; max-width: calc(100% - 32px); text-align: center }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .card:focus-visible { outline: 3px solid var(--brand-gold); outline-offset: 2px }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <symbol id="i-pen" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4zM13.5 6.5l4 4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-restore" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 12a8 8 0 1 0 2.3-5.7L4 8.5M4 4v4.5h4.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 7v5l3 2"/></symbol>
+</svg>
+
 <header class="band">
   <div class="band-in">
-    <h1>Fit <span>&amp;</span> Massa · Admin</h1>
+    <h1>Fit <span>&amp;</span> Massa</h1>
+    <nav class="nav" id="nav" hidden aria-label="Seções">
+      <button data-view="item" aria-current="true">Pratos</button>
+      <button data-view="ingrediente" aria-current="false">Ingredientes</button>
+      <button data-view="horario" aria-current="false"><svg class="i"><use href="#i-clock"/></svg>Horário de Funcionamento</button>
+    </nav>
+    <span class="state" id="state" hidden></span>
     <button class="btn ghost small" id="logout" hidden>Sair</button>
   </div>
 </header>
@@ -112,17 +167,33 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <p class="msg" id="l-msg"></p>
   </form>
 
-  <section id="panel" hidden>
+  <section id="v-list" hidden>
     <div class="bar">
-      <div class="tabs" role="tablist">
-        <button class="tab" role="tab" data-tab="item" aria-selected="true">Cardápio</button>
-        <button class="tab" role="tab" data-tab="ingrediente" aria-selected="false">Ingredientes</button>
-      </div>
+      <h2 id="list-title">Pratos</h2>
       <div class="tools">
-        <button class="btn small" id="new">Adicionar</button>
+        <button class="btn small" id="new"><svg class="i"><use href="#i-plus"/></svg>Adicionar</button>
+        <button class="btn ghost small" id="trash-btn"><svg class="i"><use href="#i-trash"/></svg>Lixeira <span class="badge zero" id="trash-count">0</span></button>
       </div>
     </div>
     <div id="list"><p class="empty">Carregando…</p></div>
+  </section>
+
+  <section id="v-hours" hidden>
+    <div class="bar"><h2>Horário de Funcionamento</h2></div>
+    <div class="now" id="now"></div>
+    <div class="cards" role="radiogroup" aria-label="Como o restaurante abre">
+      <div class="card" id="card-prog" role="radio" tabindex="0" aria-checked="true">
+        <div class="card-head"><span class="radio"></span><h3>Horário programado</h3></div>
+        <p>O site abre e fecha sozinho nestes horários (horário de Brasília). Se o horário de fechar for menor que o de abrir, fecha no dia seguinte.</p>
+        <div class="days" id="days"></div>
+        <div class="sheet-foot" style="margin-top: 4px"><button class="btn" id="save-hours">Salvar horários</button></div>
+      </div>
+      <div class="card" id="card-man" role="radio" tabindex="0" aria-checked="false">
+        <div class="card-head"><span class="radio"></span><h3>Abrir e fechar na hora</h3></div>
+        <p>Ignora os horários e deixa o restaurante aberto ou fechado até você mudar.</p>
+        <button class="btn big" id="man-btn">Abrir restaurante agora</button>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -130,7 +201,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   <form class="sheet" id="edit" novalidate role="dialog" aria-modal="true" aria-labelledby="e-title">
     <h2 id="e-title">Editar</h2>
     <div class="grid">
-      <div class="field s6"><span style="font-size: 13px; font-weight: 700">Foto</span>
+      <div class="field s6"><span class="flabel">Foto</span>
         <div class="photo"><div class="thumb" id="e-thumb"></div>
           <div class="photo-btns"><span class="btn ghost small file-btn"><span id="e-file-l">Escolher foto</span><input type="file" id="e-file" accept="image/jpeg,image/png,image/webp" aria-label="Escolher foto"></span>
           <button type="button" class="btn ghost small" id="e-nofoto">Remover foto</button></div></div></div>
@@ -154,6 +225,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     </div>
   </form>
 </div>
+
+<div class="overlay" id="tv" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="t-title">
+    <h2 id="t-title">Lixeira</h2>
+    <p class="msg" style="margin-bottom: 8px">Itens na lixeira não aparecem no site. Você pode restaurar ou excluir de vez.</p>
+    <div id="t-list"></div>
+    <div class="sheet-foot" id="t-foot"></div>
+  </div>
+</div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -161,16 +241,20 @@ const SUPABASE_URL = "https://wkhfpujnynwflcimngjg.supabase.co";
 const SUPABASE_KEY = "sb_publishable_KJAWjztbbgQqlC6IYCYS4g_eeuVSd1z";
 const EMAIL_DOMAIN = "fitemassa.app";
 const ITEM_CATS = ["pratos", "lanches", "sucos"];
+const DAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+const DEFAULT_HOURS = [0, 1, 2, 3, 4, 5, 6].map(d => ({ aberto: d !== 1, abre: "10:00", fecha: "02:30" }));
 const $ = id => document.getElementById(id);
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-let session = null, rows = [], tab = "item", editing = null, pendingDelete = null;
+const icon = n => `<svg class="i" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+let session = null, rows = [], view = "item", editing = null, trashConfirm = null, config = null, hours = null;
 
 try { session = JSON.parse(sessionStorage.getItem("fm-admin")); } catch (e) {}
 const keep = () => { try { session ? sessionStorage.setItem("fm-admin", JSON.stringify(session)) : sessionStorage.removeItem("fm-admin"); } catch (e) {} };
-
 function toast(t) { const el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 2600); }
 
+/* ---------- Supabase ---------- */
 async function auth(grant, body) {
   const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=${grant}`, {
     method: "POST", headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -179,16 +263,21 @@ async function auth(grant, body) {
   session = { token: j.access_token, refresh: j.refresh_token, exp: Date.now() + (j.expires_in - 60) * 1000 };
   keep();
 }
+async function fresh() {
+  if (session && Date.now() > session.exp) await auth("refresh_token", { refresh_token: session.refresh });
+}
 async function api(path, opts = {}) {
-  if (session && Date.now() > session.exp) { try { await auth("refresh_token", { refresh_token: session.refresh }); } catch (e) { return logout("Sua sessão expirou. Entre de novo."); } }
+  try { await fresh(); } catch (e) { logout("Sua sessão expirou. Entre de novo."); throw new Error("sessão expirada"); }
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...opts, headers: {
     apikey: SUPABASE_KEY, Authorization: `Bearer ${session.token}`, "Content-Type": "application/json", Prefer: "return=representation", ...(opts.headers || {}) } });
-  if (r.status === 401) return logout("Sua sessão expirou. Entre de novo.");
+  if (r.status === 401) { logout("Sua sessão expirou. Entre de novo."); throw new Error("sessão expirada"); }
   const j = await r.json().catch(() => null);
   if (!r.ok) throw new Error((j && (j.message || j.hint)) || `Erro ${r.status}`);
   return j;
 }
+const patchRow = (id, data) => api(`dayse?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) }).then(([row]) => { rows = rows.map(r => r.id === id ? row : r); return row; });
 
+/* ---------- login ---------- */
 $("login").addEventListener("submit", async e => {
   e.preventDefault();
   const user = $("l-user").value.trim(), pass = $("l-pass").value;
@@ -196,76 +285,144 @@ $("login").addEventListener("submit", async e => {
   $("l-btn").disabled = true; $("l-msg").className = "msg"; $("l-msg").textContent = "Entrando…";
   try {
     await auth("password", { email: user.includes("@") ? user : `${user.toLowerCase()}@${EMAIL_DOMAIN}`, password: pass });
-    $("l-pass").value = ""; showPanel();
-  } catch (err) {
-    $("l-msg").className = "msg err"; $("l-msg").textContent = "Usuário ou senha incorretos.";
-  } finally { $("l-btn").disabled = false; }
+    $("l-pass").value = ""; start();
+  } catch (err) { $("l-msg").className = "msg err"; $("l-msg").textContent = "Usuário ou senha incorretos."; }
+  finally { $("l-btn").disabled = false; }
 });
-
 function logout(msg) {
   session = null; keep();
-  $("panel").hidden = true; $("logout").hidden = true; $("login").hidden = false;
+  ["v-list", "v-hours", "nav", "logout", "state"].forEach(id => $(id).hidden = true); $("login").hidden = false;
   $("l-msg").className = msg ? "msg err" : "msg"; $("l-msg").textContent = msg || "";
 }
 $("logout").addEventListener("click", () => logout());
 
-async function showPanel() {
-  $("login").hidden = true; $("panel").hidden = false; $("logout").hidden = false;
-  await load();
+async function start() {
+  $("login").hidden = true; $("nav").hidden = false; $("logout").hidden = false;
+  show(view);
+  try {
+    const [r, c] = await Promise.all([api("dayse?select=*&order=ordem,nome"), api("dayse_config?id=eq.1&select=*")]);
+    rows = r || []; config = c && c[0] ? c[0] : { modo: "programado", aberto_manual: false, horarios: DEFAULT_HOURS };
+    hours = JSON.parse(JSON.stringify(config.horarios || DEFAULT_HOURS));
+    renderList(); renderHours(); renderState();
+  } catch (e) { $("list").innerHTML = `<p class="empty">Não foi possível carregar: ${esc(e.message)}</p>`; }
 }
-async function load() {
-  try { rows = await api("dayse?select=*&order=ordem,nome") || []; render(); }
-  catch (e) { $("list").innerHTML = `<p class="empty">Não foi possível carregar: ${esc(e.message)}</p>`; }
+function show(v) {
+  view = v;
+  document.querySelectorAll("#nav button").forEach(b => b.setAttribute("aria-current", b.dataset.view === v));
+  $("v-list").hidden = v === "horario"; $("v-hours").hidden = v !== "horario";
+  $("list-title").textContent = v === "item" ? "Pratos" : "Ingredientes";
+  renderList();
 }
 
-function macrosHTML(r) {
-  return `<span><span class="dot" style="--c: var(--m-prot)"></span><b>${+r.proteina} g</b> prot</span>
-    <span><span class="dot" style="--c: var(--m-fat)"></span><b>${+r.gordura} g</b> gord</span>
-    <span><span class="dot" style="--c: var(--m-carb)"></span><b>${+r.carboidrato} g</b> carbo</span>`;
-}
+/* ---------- lista ---------- */
+const live = () => rows.filter(r => !r.excluido_em);
+const trashed = () => rows.filter(r => r.excluido_em).sort((a, b) => b.excluido_em.localeCompare(a.excluido_em));
 const thumbHTML = r => r.foto_url
   ? `<div class="thumb has"><img src="${esc(r.foto_url)}" alt="" loading="lazy"></div>`
   : `<div class="thumb" aria-hidden="true">${esc((r.nome || "?").charAt(0))}</div>`;
-function render() {
-  const list = rows.filter(r => r.tipo === tab);
-  const groups = tab === "item" ? ITEM_CATS.concat([...new Set(list.map(r => r.categoria))].filter(c => !ITEM_CATS.includes(c))) : [...new Set(list.map(r => r.categoria))];
+const macrosHTML = r => `<span><span class="dot" style="--c: var(--m-prot)"></span><b>${+r.proteina} g</b> prot</span>
+  <span><span class="dot" style="--c: var(--m-fat)"></span><b>${+r.gordura} g</b> gord</span>
+  <span><span class="dot" style="--c: var(--m-carb)"></span><b>${+r.carboidrato} g</b> carbo</span>`;
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+function renderList() {
+  const n = trashed().length;
+  $("trash-count").textContent = n; $("trash-count").className = n ? "badge" : "badge zero";
+  if (view === "horario" || !config) return;
+  const list = live().filter(r => r.tipo === view);
+  const cats = [...new Set(list.map(r => r.categoria))];
+  const groups = view === "item" ? ITEM_CATS.concat(cats.filter(c => !ITEM_CATS.includes(c))) : cats;
   if (!list.length) { $("list").innerHTML = `<p class="empty">Nada cadastrado ainda. Toque em “Adicionar”.</p>`; return; }
   $("list").innerHTML = groups.map(g => {
     const items = list.filter(r => r.categoria === g); if (!items.length) return "";
-    return `<div class="group"><h3>${esc(g.charAt(0).toUpperCase() + g.slice(1))}</h3>${items.map(r => `
+    return `<div class="group"><h3>${esc(cap(g))}</h3>${items.map(r => `
       <div class="row${r.ativo ? "" : " off"}">
         ${thumbHTML(r)}
         <div>
           <div class="r-name">${esc(r.nome)} ${r.ativo ? "" : `<span class="chip">Oculto</span>`}</div>
           <div class="r-meta"><span><b>${brl.format(+r.preco)}</b></span>${r.porcao ? `<span>${esc(r.porcao)}</span>` : ""}${macrosHTML(r)}</div>
         </div>
-        <div class="r-act">${pendingDelete === r.id
-          ? `<span class="confirm">Excluir de vez?</span><button class="btn danger small" data-del-yes="${esc(r.id)}">Excluir</button><button class="btn ghost small" data-del-no>Não</button>`
-          : `<button class="btn ghost small" data-edit="${esc(r.id)}">Editar</button><button class="btn ghost small" data-del="${esc(r.id)}">Excluir</button>
-            <label class="switch"><input type="checkbox" data-vis="${esc(r.id)}" ${r.ativo ? "checked" : ""}><span class="track"></span>Visível no site</label>`}</div>
+        <div class="r-act">
+          <button class="btn ghost small" data-edit="${esc(r.id)}">${icon("pen")}Editar</button>
+          <button class="btn ghost small" data-del="${esc(r.id)}">${icon("trash")}Excluir</button>
+          <label class="switch"><input type="checkbox" data-vis="${esc(r.id)}" ${r.ativo ? "checked" : ""}><span class="track"></span>Visível no site</label>
+        </div>
       </div>`).join("")}</div>`;
   }).join("");
 }
 
+/* ---------- lixeira ---------- */
+function renderTrash() {
+  const list = trashed();
+  $("t-list").innerHTML = list.length ? list.map(r => `
+    <div class="trash-row">
+      <div><div class="r-name">${esc(r.nome)} <span class="chip">${r.tipo === "item" ? esc(cap(r.categoria)) : "Ingrediente"}</span></div>
+        <div class="r-meta"><span><b>${brl.format(+r.preco)}</b></span><span>Excluído em ${new Date(r.excluido_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span></div></div>
+      <div class="r-act">${trashConfirm === r.id
+        ? `<span class="confirm">Excluir de vez?</span><button class="btn danger small" data-purge-yes="${esc(r.id)}">Excluir</button><button class="btn ghost small" data-cancel>Não</button>`
+        : `<button class="btn ghost small" data-restore="${esc(r.id)}">${icon("restore")}Restaurar</button><button class="btn ghost small" data-purge="${esc(r.id)}">${icon("trash")}Excluir permanentemente</button>`}</div>
+    </div>`).join("") : `<p class="empty">A lixeira está vazia.</p>`;
+  $("t-foot").innerHTML = (list.length ? (trashConfirm === "*"
+    ? `<span class="confirm" style="align-self: center">Apagar ${list.length} ${list.length === 1 ? "item" : "itens"} de vez?</span><button class="btn danger" data-empty-yes>Esvaziar</button><button class="btn ghost" data-cancel>Não</button>`
+    : `<button class="btn danger" data-empty>${icon("trash")}Esvaziar lixeira</button>`) : "") + `<button class="btn ghost" data-close-trash>Fechar</button>`;
+}
+async function purge(ids) {
+  const list = rows.filter(r => ids.includes(r.id));
+  await api(`dayse?id=in.(${ids.map(i => `"${i.replace(/"/g, "")}"`).join(",")})`, { method: "DELETE" });
+  list.forEach(r => removeStored(r.foto_url));
+  rows = rows.filter(r => !ids.includes(r.id));
+}
+
+/* ---------- cliques ---------- */
 document.addEventListener("click", async e => {
   const t = e.target.closest("button"); if (!t) return;
-  if (t.dataset.tab) { tab = t.dataset.tab; pendingDelete = null; document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b === t)); render(); }
-  else if (t.dataset.edit) openEdit(rows.find(r => r.id === t.dataset.edit));
+  const d = t.dataset;
+  if (d.view) show(d.view);
+  else if (d.edit) openEdit(rows.find(r => r.id === d.edit));
   else if (t.id === "new") openEdit(null);
-  else if (t.dataset.del) { pendingDelete = t.dataset.del; render(); }
-  else if (t.dataset.delNo !== undefined) { pendingDelete = null; render(); }
-  else if (t.dataset.delYes) {
-    const id = t.dataset.delYes, nome = rows.find(r => r.id === id)?.nome; t.disabled = true;
-    try { await api(`dayse?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" }); rows = rows.filter(r => r.id !== id); pendingDelete = null; render(); toast(`${nome} excluído`); }
+  else if (d.del) {
+    t.disabled = true;
+    try { const row = await patchRow(d.del, { excluido_em: new Date().toISOString() }); renderList(); toast(`${row.nome} foi para a lixeira`); }
     catch (err) { t.disabled = false; toast("Não foi possível excluir: " + err.message); }
+  }
+  else if (t.id === "trash-btn") { trashConfirm = null; renderTrash(); $("tv").hidden = false; document.body.style.overflow = "hidden"; }
+  else if (d.closeTrash !== undefined) closeTrash();
+  else if (d.cancel !== undefined) { trashConfirm = null; renderTrash(); }
+  else if (d.restore) {
+    t.disabled = true;
+    try { const row = await patchRow(d.restore, { excluido_em: null }); renderTrash(); renderList(); toast(`${row.nome} restaurado`); }
+    catch (err) { t.disabled = false; toast("Não foi possível restaurar: " + err.message); }
+  }
+  else if (d.purge) { trashConfirm = d.purge; renderTrash(); }
+  else if (d.purgeYes) {
+    t.disabled = true; const nome = rows.find(r => r.id === d.purgeYes)?.nome;
+    try { await purge([d.purgeYes]); trashConfirm = null; renderTrash(); renderList(); toast(`${nome} excluído de vez`); }
+    catch (err) { t.disabled = false; toast("Não foi possível excluir: " + err.message); }
+  }
+  else if (d.empty !== undefined) { trashConfirm = "*"; renderTrash(); }
+  else if (d.emptyYes !== undefined) {
+    t.disabled = true; const ids = trashed().map(r => r.id);
+    try { await purge(ids); trashConfirm = null; renderTrash(); renderList(); toast("Lixeira esvaziada"); }
+    catch (err) { t.disabled = false; toast("Não foi possível esvaziar: " + err.message); }
   }
   else if (t.id === "e-cancel") closeEdit();
 });
+function closeTrash() { $("tv").hidden = true; document.body.style.overflow = ""; trashConfirm = null; }
+$("tv").addEventListener("click", e => { if (e.target.id === "tv") closeTrash(); });
 
+document.addEventListener("change", async e => {
+  const cb = e.target; if (!cb.dataset || !cb.dataset.vis) return;
+  const id = cb.dataset.vis, ativo = cb.checked; cb.disabled = true;
+  try { const row = await patchRow(id, { ativo }); renderList(); toast(`${row.nome} ${ativo ? "aparece no site" : "escondido do site"}`); }
+  catch (err) { cb.checked = !ativo; cb.disabled = false; toast("Não foi possível alterar: " + err.message); }
+});
+
+/* ---------- edição ---------- */
+let photo = { file: null, url: null, preview: null };
 function openEdit(r) {
   editing = r;
-  const isItem = (r ? r.tipo : tab) === "item";
-  $("e-title").textContent = r ? `Editar ${r.nome}` : (isItem ? "Novo item do cardápio" : "Novo ingrediente");
+  const isItem = (r ? r.tipo : view) === "item";
+  $("e-title").textContent = r ? `Editar ${r.nome}` : (isItem ? "Novo prato" : "Novo ingrediente");
   $("e-nome").value = r?.nome || "";
   $("e-cat").value = r?.categoria || (isItem ? "pratos" : "");
   $("e-porcao").value = r?.porcao || "";
@@ -285,7 +442,12 @@ function openEdit(r) {
   $("e-msg").className = "msg err"; $("e-msg").textContent = "";
   $("ov").hidden = false; document.body.style.overflow = "hidden"; $("e-nome").focus();
 }
-let photo = { file: null, url: null, preview: null };
+function closeEdit() { $("ov").hidden = true; document.body.style.overflow = ""; editing = null; }
+$("ov").addEventListener("click", e => { if (e.target.id === "ov") closeEdit(); });
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (!$("ov").hidden) closeEdit(); else if (!$("tv").hidden) closeTrash();
+});
 function showPhoto() {
   const t = $("e-thumb");
   if (photo.preview) { t.className = "thumb has"; t.innerHTML = `<img src="${esc(photo.preview)}" alt="Prévia da foto">`; }
@@ -308,6 +470,7 @@ async function shrink(file, max = 900) {
   return await new Promise((ok, no) => c.toBlob(b => b ? ok(b) : no(new Error("imagem")), "image/jpeg", .85));
 }
 async function uploadPhoto(id, blob) {
+  await fresh();
   const path = `${id}-${Date.now().toString(36)}.jpg`;
   const r = await fetch(`${SUPABASE_URL}/storage/v1/object/dayse-fotos/${encodeURIComponent(path)}`, { method: "POST",
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${session.token}`, "Content-Type": "image/jpeg", "x-upsert": "true" }, body: blob });
@@ -316,32 +479,20 @@ async function uploadPhoto(id, blob) {
 }
 function removeStored(url) {
   const pre = `${SUPABASE_URL}/storage/v1/object/public/dayse-fotos/`;
-  if (!url || !url.startsWith(pre)) return;
+  if (!url || !url.startsWith(pre) || !session) return;
   fetch(`${SUPABASE_URL}/storage/v1/object/dayse-fotos/${url.slice(pre.length)}`, { method: "DELETE",
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${session.token}` } }).catch(() => {});
 }
-function closeEdit() { $("ov").hidden = true; document.body.style.overflow = ""; editing = null; }
-document.addEventListener("change", async e => {
-  const cb = e.target; if (!cb.dataset || !cb.dataset.vis) return;
-  const id = cb.dataset.vis, ativo = cb.checked; cb.disabled = true;
-  try {
-    const [row] = await api(`dayse?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ ativo }) });
-    rows = rows.map(r => r.id === id ? row : r); render();
-    toast(`${row.nome} ${ativo ? "aparece no site" : "escondido do site"}`);
-  } catch (err) { cb.checked = !ativo; cb.disabled = false; toast("Não foi possível alterar: " + err.message); }
-});
-$("ov").addEventListener("click", e => { if (e.target.id === "ov") closeEdit(); });
-document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("ov").hidden) closeEdit(); });
-
 const slug = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
 $("edit").addEventListener("submit", async e => {
   e.preventDefault();
-  const isItem = (editing ? editing.tipo : tab) === "item";
+  const isItem = (editing ? editing.tipo : view) === "item";
   const nome = $("e-nome").value.trim(), cat = $("e-cat").value.trim(), preco = parseFloat($("e-preco").value);
   if (!nome || !cat || !(preco >= 0)) { $("e-msg").textContent = "Preencha nome, categoria e preço."; return; }
-  if (isItem && !ITEM_CATS.includes(cat)) { $("e-msg").textContent = "Para itens do cardápio, a categoria precisa ser pratos, lanches ou sucos."; return; }
+  if (isItem && !ITEM_CATS.includes(cat)) { $("e-msg").textContent = "Para pratos, a categoria precisa ser pratos, lanches ou sucos."; return; }
   const num = id => Math.max(0, parseFloat($(id).value) || 0);
-  const data = { nome, categoria: cat, porcao: isItem ? ($("e-qtd").value ? `${+$("e-qtd").value} ${$("e-un").value}` : null) : ($("e-porcao").value.trim() || null), descricao: isItem ? ($("e-desc").value.trim() || null) : null,
+  const data = { nome, categoria: cat, descricao: isItem ? ($("e-desc").value.trim() || null) : null,
+    porcao: isItem ? ($("e-qtd").value ? `${+$("e-qtd").value} ${$("e-un").value}` : null) : ($("e-porcao").value.trim() || null),
     preco, ordem: parseInt($("e-ordem").value, 10) || 0, ativo: $("e-ativo").checked, proteina: num("e-p"), gordura: num("e-g"), carboidrato: num("e-c") };
   $("e-save").disabled = true;
   try {
@@ -349,21 +500,87 @@ $("edit").addEventListener("submit", async e => {
     const oldUrl = editing?.foto_url || null;
     if (photo.file) { $("e-msg").className = "msg"; $("e-msg").textContent = "Enviando foto…"; data.foto_url = await uploadPhoto(id, photo.file); }
     else data.foto_url = photo.url;
+    if (editing) await patchRow(id, data);
+    else { const [row] = await api("dayse", { method: "POST", body: JSON.stringify({ id, tipo: isItem ? "item" : "ingrediente", ...data }) }); rows.push(row); }
     if (oldUrl && oldUrl !== data.foto_url) removeStored(oldUrl);
-    if (editing) {
-      const [row] = await api(`dayse?id=eq.${encodeURIComponent(editing.id)}`, { method: "PATCH", body: JSON.stringify(data) });
-      rows = rows.map(r => r.id === row.id ? row : r);
-    } else {
-      const [row] = await api("dayse", { method: "POST", body: JSON.stringify({ id, tipo: isItem ? "item" : "ingrediente", ...data }) });
-      rows.push(row);
-    }
     rows.sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome));
-    closeEdit(); render(); toast(`${nome} salvo`);
+    closeEdit(); renderList(); toast(`${nome} salvo`);
   } catch (err) { $("e-msg").className = "msg err"; $("e-msg").textContent = "Não foi possível salvar: " + err.message; }
   finally { $("e-save").disabled = false; }
 });
 
-if (session && session.token) showPanel();
+/* ---------- horário de funcionamento ---------- */
+function nowInBrasilia() {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/Sao_Paulo", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    .formatToParts(new Date()).map(p => [p.type, p.value]));
+  return { day: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(parts.weekday), min: (+parts.hour % 24) * 60 + +parts.minute };
+}
+const toMin = t => { const [h, m] = (t || "0:0").split(":").map(Number); return h * 60 + (m || 0); };
+const fmt = t => { const [h, m] = t.split(":"); return `${+h}h${m}`; };
+function openBySchedule(h) {
+  const { day, min } = nowInBrasilia();
+  const today = h[day], yest = h[(day + 6) % 7];
+  if (today && today.aberto) { const a = toMin(today.abre), f = toMin(today.fecha); if (f > a ? (min >= a && min < f) : min >= a) return true; }
+  if (yest && yest.aberto) { const a = toMin(yest.abre), f = toMin(yest.fecha); if (f <= a && min < f) return true; }
+  return false;
+}
+function isOpen() { return config.modo === "manual" ? config.aberto_manual : openBySchedule(config.horarios || DEFAULT_HOURS); }
+function renderState() {
+  if (!config) return;
+  const open = isOpen(), how = config.modo === "manual" ? "na hora" : "pelo horário programado";
+  $("state").hidden = false; $("state").style.setProperty("--c", open ? "#6fd39f" : "#ff8a80");
+  $("state").textContent = open ? "Aberto" : "Fechado";
+  $("now").innerHTML = `Agora o restaurante está <strong style="--c: var(${open ? "--ok" : "--closed"})">${open ? "aberto" : "fechado"}</strong> (${how}).`;
+  $("card-prog").setAttribute("aria-checked", config.modo === "programado");
+  $("card-man").setAttribute("aria-checked", config.modo === "manual");
+  const mb = $("man-btn");
+  mb.textContent = config.modo === "manual" && config.aberto_manual ? "Fechar restaurante agora" : "Abrir restaurante agora";
+  mb.className = "btn big " + (config.modo === "manual" && config.aberto_manual ? "close" : "open");
+}
+function renderHours() {
+  $("days").innerHTML = WEEK_ORDER.map(d => { const h = hours[d]; const over = toMin(h.fecha) <= toMin(h.abre); return `
+    <div class="day">
+      <span class="day-name">${DAYS[d]}</span>
+      <label class="switch"><input type="checkbox" data-day="${d}" ${h.aberto ? "checked" : ""}><span class="track"></span>${h.aberto ? "Aberto" : "Fechado"}</label>
+      <span class="times"><input type="time" data-abre="${d}" value="${h.abre}" ${h.aberto ? "" : "disabled"} aria-label="${DAYS[d]}: abre às">às
+        <input type="time" data-fecha="${d}" value="${h.fecha}" ${h.aberto ? "" : "disabled"} aria-label="${DAYS[d]}: fecha às">
+        ${h.aberto && over ? `<span class="next">fecha no dia seguinte</span>` : ""}</span>
+    </div>`; }).join("");
+}
+$("days").addEventListener("change", e => {
+  const t = e.target;
+  if (t.dataset.day) hours[t.dataset.day].aberto = t.checked;
+  if (t.dataset.abre && t.value) hours[t.dataset.abre].abre = t.value;
+  if (t.dataset.fecha && t.value) hours[t.dataset.fecha].fecha = t.value;
+  renderHours();
+});
+async function saveConfig(data, msg) {
+  const [c] = await api("dayse_config?id=eq.1", { method: "PATCH", body: JSON.stringify({ ...data, atualizado_em: new Date().toISOString() }) });
+  config = c; renderState(); if (msg) toast(msg);
+}
+$("save-hours").addEventListener("click", async e => {
+  e.stopPropagation(); const b = e.currentTarget; b.disabled = true;
+  try { await saveConfig({ horarios: hours, modo: "programado" }, "Horários salvos. O site segue o horário programado."); }
+  catch (err) { toast("Não foi possível salvar: " + err.message); } finally { b.disabled = false; }
+});
+$("man-btn").addEventListener("click", async e => {
+  e.stopPropagation(); const b = e.currentTarget; b.disabled = true;
+  const abrir = !(config.modo === "manual" && config.aberto_manual);
+  try { await saveConfig({ modo: "manual", aberto_manual: abrir }, abrir ? "Restaurante aberto" : "Restaurante fechado"); }
+  catch (err) { toast("Não foi possível mudar: " + err.message); } finally { b.disabled = false; }
+});
+async function pickCard(modo) {
+  if (!config || config.modo === modo) return;
+  try { await saveConfig(modo === "manual" ? { modo, aberto_manual: false } : { modo }, modo === "manual" ? "Modo manual: o restaurante está fechado até você abrir" : "O site segue o horário programado"); }
+  catch (err) { toast("Não foi possível mudar: " + err.message); }
+}
+[["card-prog", "programado"], ["card-man", "manual"]].forEach(([id, modo]) => {
+  $(id).addEventListener("click", e => { if (!e.target.closest("button, input, label")) pickCard(modo); });
+  $(id).addEventListener("keydown", e => { if ((e.key === " " || e.key === "Enter") && e.target === $(id)) { e.preventDefault(); pickCard(modo); } });
+});
+setInterval(renderState, 30000);
+
+if (session && session.token) start();
 </script>
 </body>
 </html>
