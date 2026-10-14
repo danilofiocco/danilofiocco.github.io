@@ -141,6 +141,11 @@ svg.i { width: 16px; height: 16px; flex: none }
   -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 14px 51% repeat-x, conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / 14px 51% repeat-x;
   mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 14px 51% repeat-x, conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / 14px 51% repeat-x }
 .tk-wrap.ghost .ticket { cursor: grabbing; transform: rotate(2deg) }
+.tk-timer { margin: -18px -14px 12px; padding: 9px 14px 6px; text-align: center; font-family: var(--body); font-weight: 800; font-size: 17px; letter-spacing: .06em; font-variant-numeric: tabular-nums; color: #fff; transition: background .4s }
+.tk-timer.ok { background: #2f8a4e }
+.tk-timer.warn { background: #e0b12e; color: #2a2208 }
+.tk-timer.late { background: #c62f24 }
+.tk-timer.done { background: #8a877d; font-size: 13.5px; letter-spacing: .02em }
 .tk-head { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 1.5px dashed var(--tk-mut); touch-action: none; cursor: grab }
 .tk-head b { font-size: 16px; letter-spacing: .02em }
 .tk-head time { margin-left: auto; color: var(--tk-mut); font-size: 12.5px }
@@ -709,7 +714,9 @@ function waLink(num) {
 }
 function ticketHTML(o, fresh) {
   const e = o.entrega || {}, addr = [[e.rua, e.numero].filter(Boolean).join(", "), e.complemento, e.bairro, e.cidade].filter(Boolean).join(" · ");
+  const done = o.status === "concluido";
   return `<div class="tk-wrap${fresh ? " fresh" : ""}" data-id="${o.id}"><article class="ticket" aria-label="Pedido ${o.id} de ${esc(o.nome)}">
+    <div class="tk-timer" data-start="${esc(o.criado_em)}"${done ? ` data-end="${esc(o.status_em)}"` : ""}></div>
     <div class="tk-head"><svg class="tk-grip" aria-hidden="true"><use href="#i-grip"/></svg><b>#${o.id}</b><time datetime="${esc(o.criado_em)}">${hhmm(o.criado_em)}</time></div>
     <div class="tk-name">${esc(o.nome)}</div>
     ${waLink(e.whatsapp)}
@@ -719,6 +726,18 @@ function ticketHTML(o, fresh) {
     ${NEXT[o.status] ? `<button type="button" class="tk-move" data-move="${o.id}">Mover para ${NEXT[o.status][1]} →</button>` : ""}
   </article></div>`;
 }
+// Tarja do tempo desde o pedido: verde até 5 min, amarela até 10, vermelha depois. Em Concluído, fica parada no tempo total.
+function tickTimers() {
+  const now = Date.now();
+  document.querySelectorAll(".tk-timer").forEach(t => {
+    const end = t.dataset.end ? Date.parse(t.dataset.end) : now;
+    const sec = Math.max(0, Math.floor((end - Date.parse(t.dataset.start)) / 1000));
+    const txt = `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
+    t.textContent = t.dataset.end ? `Concluído em ${txt}` : txt;
+    t.className = "tk-timer " + (t.dataset.end ? "done" : sec < 300 ? "ok" : sec < 600 ? "warn" : "late");
+  });
+}
+setInterval(tickTimers, 1000);
 function renderOrders(fresh = []) {
   const pend = orders.filter(o => o.status !== "concluido");
   const pratos = pend.reduce((n, o) => n + (o.pratos || 0), 0);
@@ -730,6 +749,7 @@ function renderOrders(fresh = []) {
     $("n-" + st).textContent = list.length;
     $("c-" + st).innerHTML = list.length ? list.map(o => ticketHTML(o, fresh.includes(o.id))).join("") : `<p class="col-empty">${st === "novo" ? "Nenhum pedido novo." : st === "preparo" ? "Nada em preparação." : "Nenhum pedido concluído ainda."}</p>`;
   });
+  tickTimers();
 }
 async function moveOrder(id, status) {
   const o = orders.find(x => x.id === id); if (!o || o.status === status) return;
