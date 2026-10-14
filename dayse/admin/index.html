@@ -728,6 +728,7 @@ async function loadOrders() {
     const fresh = seenOrders ? all.filter(o => !seenOrders.has(o.id)).map(o => o.id) : [];
     seenOrders = new Set(all.map(o => o.id)); orders = all;
     renderOrders(fresh);
+    if (fresh.length) ringBell();
   } catch (e) { $("ord-msg").textContent = "Não foi possível carregar os pedidos: " + e.message; }
 }
 const hhmm = iso => { const d = new Date(iso), today = new Date().toDateString() === d.toDateString();
@@ -854,7 +855,30 @@ function endDrag(e, drop) {
 }
 $("board").addEventListener("pointerup", e => endDrag(e, true));
 $("board").addEventListener("pointercancel", e => endDrag(e, false));
-setInterval(loadOrders, 20000);
+setInterval(loadOrders, 8000);
+
+// Sino de recepção de hotel, sintetizado (sem arquivo de áudio): toca 3 vezes quando chega pedido novo.
+// O navegador só libera som depois de um toque ou clique na página, então o áudio é destravado na primeira interação.
+let audio = null;
+function unlockAudio() {
+  try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === "suspended") audio.resume(); } catch (e) {}
+}
+["pointerdown", "keydown"].forEach(ev => addEventListener(ev, unlockAudio, { passive: true }));
+function ding(t) {
+  const f = 2350, out = audio.createGain(); out.connect(audio.destination);
+  out.gain.setValueAtTime(0.0001, t); out.gain.exponentialRampToValueAtTime(0.5, t + 0.004); out.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
+  [[1, 1, 2.2], [2.76, .45, 1.1], [5.4, .22, .6], [8.93, .1, .35]].forEach(([r, g, d]) => {
+    const o = audio.createOscillator(), a = audio.createGain();
+    o.type = "sine"; o.frequency.value = f * r;
+    a.gain.setValueAtTime(g, t); a.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(a).connect(out); o.start(t); o.stop(t + d + .05);
+  });
+}
+function ringBell() {
+  if (!audio || audio.state !== "running") { toast("Pedido novo! Toque na tela uma vez para ativar o som dos próximos."); return; }
+  const t = audio.currentTime + .05;
+  [0, .42, .84].forEach(dt => ding(t + dt));
+}
 
 if (session && session.token) start();
 </script>
