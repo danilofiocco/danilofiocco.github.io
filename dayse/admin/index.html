@@ -37,6 +37,9 @@ svg.i { width: 16px; height: 16px; flex: none }
 .nav button[aria-current="true"] { background: var(--brand-cream); color: var(--brand); border-color: var(--brand-cream) }
 .state { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: rgba(242,236,224,.12) }
 .state::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c, #9aa) }
+.state.open::before { animation: pulse 1.6s ease-out infinite }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(111,211,159,.75) } 70% { box-shadow: 0 0 0 7px rgba(111,211,159,0) } 100% { box-shadow: 0 0 0 0 rgba(111,211,159,0) } }
+@media (prefers-reduced-motion: reduce) { .state.open::before { animation: none } }
 
 .wrap { max-width: 980px; margin: 0 auto; padding: 22px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px)) }
 .btn { border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 700; cursor: pointer; background: var(--brand); color: var(--brand-cream); box-shadow: inset 0 0 0 2px var(--brand-gold); display: inline-flex; align-items: center; justify-content: center; gap: 6px }
@@ -529,7 +532,7 @@ function renderState() {
   if (!config) return;
   const open = isOpen(), how = config.modo === "manual" ? "na hora" : "pelo horário programado";
   $("state").hidden = false; $("state").style.setProperty("--c", open ? "#6fd39f" : "#ff8a80");
-  $("state").textContent = open ? "Aberto" : "Fechado";
+  $("state").textContent = open ? "Aberto" : "Fechado"; $("state").classList.toggle("open", open);
   $("now").innerHTML = `Agora o restaurante está <strong style="--c: var(${open ? "--ok" : "--closed"})">${open ? "aberto" : "fechado"}</strong> (${how}).`;
   $("card-prog").setAttribute("aria-checked", config.modo === "programado");
   $("card-man").setAttribute("aria-checked", config.modo === "manual");
