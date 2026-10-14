@@ -53,8 +53,8 @@ button, input, select, textarea { font: inherit; color: inherit }
 .tools { display: flex; gap: 8px; flex-wrap: wrap }
 .tools select { padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface) }
 .group h3 { font-family: var(--display); font-weight: 400; font-size: 18px; margin: 22px 0 6px }
-.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px }
-.row.off { opacity: .6 }
+.row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px }
+.row.off > :not(.r-act) { opacity: .55 }
 .r-name { font-weight: 800 }
 .r-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 2px }
 .r-meta b { color: var(--ink) }
@@ -62,7 +62,24 @@ button, input, select, textarea { font: inherit; color: inherit }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; background: var(--c) }
 .r-act { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end }
 .confirm { font-size: 13px; font-weight: 700; color: var(--danger) }
-@media (max-width: 560px) { .row { grid-template-columns: minmax(0, 1fr) } .r-act { justify-content: flex-start } }
+.thumb { width: 56px; height: 56px; border-radius: 50%; background: var(--bg); border: 2px dashed var(--line); display: grid; place-items: center; overflow: hidden; font-family: var(--display); font-size: 20px; color: var(--muted) }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block }
+.thumb.has { border-style: solid; border-color: var(--brand-gold) }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; padding-left: 4px }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px }
+.switch .track { width: 40px; height: 22px; border-radius: 999px; background: var(--line); position: relative; transition: background .15s; flex: none }
+.switch .track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .15s }
+.switch input:checked + .track { background: var(--ok) }
+.switch input:checked + .track::after { transform: translateX(18px) }
+.switch input:focus-visible + .track { outline: 3px solid var(--brand-gold); outline-offset: 2px }
+.switch input:disabled + .track { opacity: .5 }
+@media (prefers-reduced-motion: reduce) { .switch .track, .switch .track::after { transition: none } }
+@media (max-width: 560px) { .row { grid-template-columns: 56px minmax(0, 1fr) } .r-act { grid-column: 1 / -1; justify-content: flex-start } .switch { margin-left: auto } }
+.photo { display: flex; align-items: center; gap: 14px; flex-wrap: wrap }
+.photo .thumb { width: 84px; height: 84px; font-size: 28px }
+.photo-btns { display: flex; gap: 8px; flex-wrap: wrap }
+.file-btn { position: relative; overflow: hidden }
+.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer }
 .empty { color: var(--muted); padding: 24px 0 }
 /* painel de edição */
 .overlay { position: fixed; inset: 0; z-index: 40; background: rgba(10,20,14,.55); display: flex; align-items: center; justify-content: center; padding: 16px }
@@ -113,6 +130,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   <form class="sheet" id="edit" novalidate role="dialog" aria-modal="true" aria-labelledby="e-title">
     <h2 id="e-title">Editar</h2>
     <div class="grid">
+      <div class="field s6"><span style="font-size: 13px; font-weight: 700">Foto</span>
+        <div class="photo"><div class="thumb" id="e-thumb"></div>
+          <div class="photo-btns"><span class="btn ghost small file-btn"><span id="e-file-l">Escolher foto</span><input type="file" id="e-file" accept="image/jpeg,image/png,image/webp" aria-label="Escolher foto"></span>
+          <button type="button" class="btn ghost small" id="e-nofoto">Remover foto</button></div></div></div>
       <div class="field s6"><label for="e-nome">Nome</label><input id="e-nome" required></div>
       <div class="field s3"><label for="e-cat">Categoria</label><input id="e-cat" list="cats" required></div>
       <div class="field s3" id="e-porcao-f"><label for="e-porcao">Porção</label><input id="e-porcao" placeholder="ex.: 100 g ou 2 fatias"></div>
@@ -202,6 +223,9 @@ function macrosHTML(r) {
     <span><span class="dot" style="--c: var(--m-fat)"></span><b>${+r.gordura} g</b> gord</span>
     <span><span class="dot" style="--c: var(--m-carb)"></span><b>${+r.carboidrato} g</b> carbo</span>`;
 }
+const thumbHTML = r => r.foto_url
+  ? `<div class="thumb has"><img src="${esc(r.foto_url)}" alt="" loading="lazy"></div>`
+  : `<div class="thumb" aria-hidden="true">${esc((r.nome || "?").charAt(0))}</div>`;
 function render() {
   const list = rows.filter(r => r.tipo === tab);
   const groups = tab === "item" ? ITEM_CATS.concat([...new Set(list.map(r => r.categoria))].filter(c => !ITEM_CATS.includes(c))) : [...new Set(list.map(r => r.categoria))];
@@ -210,13 +234,15 @@ function render() {
     const items = list.filter(r => r.categoria === g); if (!items.length) return "";
     return `<div class="group"><h3>${esc(g.charAt(0).toUpperCase() + g.slice(1))}</h3>${items.map(r => `
       <div class="row${r.ativo ? "" : " off"}">
+        ${thumbHTML(r)}
         <div>
           <div class="r-name">${esc(r.nome)} ${r.ativo ? "" : `<span class="chip">Oculto</span>`}</div>
           <div class="r-meta"><span><b>${brl.format(+r.preco)}</b></span>${r.porcao ? `<span>${esc(r.porcao)}</span>` : ""}${macrosHTML(r)}</div>
         </div>
         <div class="r-act">${pendingDelete === r.id
           ? `<span class="confirm">Excluir de vez?</span><button class="btn danger small" data-del-yes="${esc(r.id)}">Excluir</button><button class="btn ghost small" data-del-no>Não</button>`
-          : `<button class="btn ghost small" data-edit="${esc(r.id)}">Editar</button><button class="btn ghost small" data-del="${esc(r.id)}">Excluir</button>`}</div>
+          : `<button class="btn ghost small" data-edit="${esc(r.id)}">Editar</button><button class="btn ghost small" data-del="${esc(r.id)}">Excluir</button>
+            <label class="switch"><input type="checkbox" data-vis="${esc(r.id)}" ${r.ativo ? "checked" : ""}><span class="track"></span>Visível no site</label>`}</div>
       </div>`).join("")}</div>`;
   }).join("");
 }
@@ -255,10 +281,55 @@ function openEdit(r) {
   $("e-p").value = r ? +r.proteina : 0; $("e-g").value = r ? +r.gordura : 0; $("e-c").value = r ? +r.carboidrato : 0;
   const cats = isItem ? ITEM_CATS : [...new Set(rows.filter(x => x.tipo === "ingrediente").map(x => x.categoria))];
   $("cats").innerHTML = cats.map(c => `<option value="${esc(c)}">`).join("");
-  $("e-msg").textContent = "";
+  photo = { file: null, url: r?.foto_url || null, preview: r?.foto_url || null }; $("e-file").value = ""; showPhoto();
+  $("e-msg").className = "msg err"; $("e-msg").textContent = "";
   $("ov").hidden = false; document.body.style.overflow = "hidden"; $("e-nome").focus();
 }
+let photo = { file: null, url: null, preview: null };
+function showPhoto() {
+  const t = $("e-thumb");
+  if (photo.preview) { t.className = "thumb has"; t.innerHTML = `<img src="${esc(photo.preview)}" alt="Prévia da foto">`; }
+  else { t.className = "thumb"; t.textContent = ($("e-nome").value || "?").charAt(0); }
+  $("e-file-l").textContent = photo.preview ? "Trocar foto" : "Escolher foto";
+  $("e-nofoto").hidden = !photo.preview;
+}
+$("e-file").addEventListener("change", async () => {
+  const f = $("e-file").files[0]; if (!f) return;
+  if (!/^image\//.test(f.type)) { $("e-msg").textContent = "Escolha uma imagem JPG, PNG ou WEBP."; return; }
+  try { photo.file = await shrink(f); photo.preview = URL.createObjectURL(photo.file); showPhoto(); $("e-msg").textContent = ""; }
+  catch (e) { $("e-msg").textContent = "Não foi possível ler essa imagem."; }
+});
+$("e-nofoto").addEventListener("click", () => { photo = { file: null, url: null, preview: null }; $("e-file").value = ""; showPhoto(); });
+async function shrink(file, max = 900) {
+  const img = await createImageBitmap(file);
+  const k = Math.min(1, max / Math.max(img.width, img.height));
+  const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  return await new Promise((ok, no) => c.toBlob(b => b ? ok(b) : no(new Error("imagem")), "image/jpeg", .85));
+}
+async function uploadPhoto(id, blob) {
+  const path = `${id}-${Date.now().toString(36)}.jpg`;
+  const r = await fetch(`${SUPABASE_URL}/storage/v1/object/dayse-fotos/${encodeURIComponent(path)}`, { method: "POST",
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${session.token}`, "Content-Type": "image/jpeg", "x-upsert": "true" }, body: blob });
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.message || `envio da foto falhou (${r.status})`); }
+  return `${SUPABASE_URL}/storage/v1/object/public/dayse-fotos/${encodeURIComponent(path)}`;
+}
+function removeStored(url) {
+  const pre = `${SUPABASE_URL}/storage/v1/object/public/dayse-fotos/`;
+  if (!url || !url.startsWith(pre)) return;
+  fetch(`${SUPABASE_URL}/storage/v1/object/dayse-fotos/${url.slice(pre.length)}`, { method: "DELETE",
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${session.token}` } }).catch(() => {});
+}
 function closeEdit() { $("ov").hidden = true; document.body.style.overflow = ""; editing = null; }
+document.addEventListener("change", async e => {
+  const cb = e.target; if (!cb.dataset || !cb.dataset.vis) return;
+  const id = cb.dataset.vis, ativo = cb.checked; cb.disabled = true;
+  try {
+    const [row] = await api(`dayse?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ ativo }) });
+    rows = rows.map(r => r.id === id ? row : r); render();
+    toast(`${row.nome} ${ativo ? "aparece no site" : "escondido do site"}`);
+  } catch (err) { cb.checked = !ativo; cb.disabled = false; toast("Não foi possível alterar: " + err.message); }
+});
 $("ov").addEventListener("click", e => { if (e.target.id === "ov") closeEdit(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("ov").hidden) closeEdit(); });
 
@@ -274,17 +345,21 @@ $("edit").addEventListener("submit", async e => {
     preco, ordem: parseInt($("e-ordem").value, 10) || 0, ativo: $("e-ativo").checked, proteina: num("e-p"), gordura: num("e-g"), carboidrato: num("e-c") };
   $("e-save").disabled = true;
   try {
+    const id = editing ? editing.id : (() => { let x = slug(nome) || "item"; if (rows.some(r => r.id === x)) x += "-" + Date.now().toString(36).slice(-4); return x; })();
+    const oldUrl = editing?.foto_url || null;
+    if (photo.file) { $("e-msg").className = "msg"; $("e-msg").textContent = "Enviando foto…"; data.foto_url = await uploadPhoto(id, photo.file); }
+    else data.foto_url = photo.url;
+    if (oldUrl && oldUrl !== data.foto_url) removeStored(oldUrl);
     if (editing) {
       const [row] = await api(`dayse?id=eq.${encodeURIComponent(editing.id)}`, { method: "PATCH", body: JSON.stringify(data) });
       rows = rows.map(r => r.id === row.id ? row : r);
     } else {
-      let id = slug(nome) || "item"; if (rows.some(r => r.id === id)) id += "-" + Date.now().toString(36).slice(-4);
       const [row] = await api("dayse", { method: "POST", body: JSON.stringify({ id, tipo: isItem ? "item" : "ingrediente", ...data }) });
       rows.push(row);
     }
     rows.sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome));
     closeEdit(); render(); toast(`${nome} salvo`);
-  } catch (err) { $("e-msg").textContent = "Não foi possível salvar: " + err.message; }
+  } catch (err) { $("e-msg").className = "msg err"; $("e-msg").textContent = "Não foi possível salvar: " + err.message; }
   finally { $("e-save").disabled = false; }
 });
 
