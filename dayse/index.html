@@ -286,6 +286,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
     <ul class="recap" id="recap"></ul>
     <div class="fields">
       <div class="field"><label for="f-nome">Nome</label><input id="f-nome" name="nome" autocomplete="name" required></div>
+      <div class="field"><label for="f-whats">WhatsApp <small>com DDD</small></label><input id="f-whats" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="(15) 99999-9999" required></div>
       <div class="field w4 keep"><label for="f-rua">Rua</label><input id="f-rua" name="rua" autocomplete="address-line1" required></div>
       <div class="field w2 keep"><label for="f-numero">Número</label><input id="f-numero" name="numero" inputmode="numeric" required></div>
       <div class="field w3"><label for="f-compl">Complemento <small>(opcional)</small></label><input id="f-compl" name="complemento" placeholder="Apto, bloco" autocomplete="address-line2"></div>
@@ -545,6 +546,7 @@ function buildMessage() {
     `Total: ${brl.format(total)}`, "",
     "Dados de entrega:",
     `Nome: ${val("nome")}`,
+    `WhatsApp: ${val("whatsapp")}`,
     `Endereço: ${addr}`,
     `Bairro: ${val("bairro")}`,
     `Cidade: ${val("cidade")}`,
@@ -556,7 +558,7 @@ function buildMessage() {
 // O mesmo pedido enviado de novo em menos de 10 minutos não é duplicado.
 function saveOrder() {
   const lines = orderLines(); if (!lines.length || !SUPABASE_URL) return;
-  const entrega = {}; ["rua", "numero", "complemento", "bairro", "cidade", "cep", "referencia"].forEach(n => { if (val(n)) entrega[n] = val(n); });
+  const entrega = {}; ["whatsapp", "rua", "numero", "complemento", "bairro", "cidade", "cep", "referencia"].forEach(n => { if (val(n)) entrega[n] = val(n); });
   const order = {
     nome: val("nome"), entrega,
     itens: lines.map(l => ({ nome: l.d.name, qtd: l.q, preco: l.d.price, ...(l.d.custom ? { detalhe: plateDetail(l.d) } : {}) })),
@@ -654,7 +656,7 @@ function showIngredients(id) {
 }
 function closeForm() { overlay.hidden = true; document.body.style.overflow = ""; }
 const FORM_KEY = "fit-massa-entrega";
-const FIELDS = ["nome", "rua", "numero", "complemento", "bairro", "cep", "referencia"];
+const FIELDS = ["nome", "whatsapp", "rua", "numero", "complemento", "bairro", "cep", "referencia"];
 function saveForm() {
   const data = {}; FIELDS.forEach(n => data[n] = form.elements[n].value);
   try { localStorage.setItem(FORM_KEY, JSON.stringify(data)); } catch (e) {}
@@ -667,6 +669,7 @@ function loadForm() {
 function clearForm() {
   form.reset();
   try { localStorage.removeItem(FORM_KEY); } catch (e) {}
+  fmtWhats();
   updateLink();
   const msg = document.getElementById("form-msg");
   msg.className = "form-msg"; msg.textContent = "Formulário limpo.";
@@ -674,6 +677,15 @@ function clearForm() {
 }
 loadForm();
 document.getElementById("form-clear").addEventListener("click", clearForm);
+// WhatsApp: aceita só números, formata como (15) 99999-9999 e exige DDD + número (10 ou 11 dígitos).
+const whats = document.getElementById("f-whats");
+function fmtWhats() {
+  let d = whats.value.replace(/\D/g, ""); if (d.length > 11 && d.startsWith("55")) d = d.slice(2); d = d.slice(0, 11);
+  whats.value = d.length > 6 ? `(${d.slice(0, 2)}) ${d.slice(2, d.length - 4)}-${d.slice(-4)}` : d.length > 2 ? `(${d.slice(0, 2)}) ${d.slice(2)}` : d;
+  whats.setCustomValidity(d.length >= 10 ? "" : "Informe o WhatsApp com DDD.");
+}
+whats.addEventListener("input", fmtWhats);
+fmtWhats();
 form.addEventListener("input", () => { saveForm(); updateLink(); });
 form.addEventListener("submit", e => e.preventDefault());
 overlay.addEventListener("click", e => { if (e.target === overlay) closeForm(); });
