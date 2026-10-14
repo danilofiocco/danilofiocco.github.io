@@ -552,6 +552,24 @@ function buildMessage() {
     val("referencia") ? `Referência: ${val("referencia")}` : null
   ].filter(x => x !== null).join("\n");
 }
+// Registra o pedido na tabela "dayse_pedidos" para aparecer na tela de Pedidos do admin.
+// O mesmo pedido enviado de novo em menos de 10 minutos não é duplicado.
+function saveOrder() {
+  const lines = orderLines(); if (!lines.length || !SUPABASE_URL) return;
+  const entrega = {}; ["rua", "numero", "complemento", "bairro", "cidade", "cep", "referencia"].forEach(n => { if (val(n)) entrega[n] = val(n); });
+  const order = {
+    nome: val("nome"), entrega,
+    itens: lines.map(l => ({ nome: l.d.name, qtd: l.q, preco: l.d.price, ...(l.d.custom ? { detalhe: plateDetail(l.d) } : {}) })),
+    pratos: lines.reduce((n, l) => n + l.q, 0),
+    total: Math.round(lines.reduce((s, l) => s + l.q * l.d.price, 0) * 100) / 100
+  };
+  const key = JSON.stringify(order);
+  try { const last = JSON.parse(sessionStorage.getItem("fm-ultimo-pedido") || "null"); if (last && last.key === key && Date.now() - last.t < 600000) return; } catch (e) {}
+  fetch(`${SUPABASE_URL}/rest/v1/dayse_pedidos`, { method: "POST", keepalive: true,
+    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json", Prefer: "return=minimal" }, body: key })
+    .then(r => { if (r.ok) try { sessionStorage.setItem("fm-ultimo-pedido", JSON.stringify({ key, t: Date.now() })); } catch (e) {} })
+    .catch(e => console.warn("Pedido não registrado no painel.", e));
+}
 function updateLink() {
   document.getElementById("send").href = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(buildMessage())}`;
 }
@@ -677,6 +695,7 @@ document.getElementById("send").addEventListener("click", e => {
     return;
   }
   updateLink();
+  saveOrder();
   msg.className = "form-msg";
   msg.textContent = "Abrimos o WhatsApp numa nova aba. Confira a mensagem e toque em enviar para concluir o pedido.";
 });
