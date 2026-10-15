@@ -218,6 +218,11 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer }
 .l-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px }
 .l-filter .t-filter { margin-bottom: 0 }
+.cw { display: inline-flex }
+.cw > button:first-child:not(:only-child) { border-radius: 999px 0 0 999px; padding-right: 10px }
+.t-filter .cat-pen { border-radius: 0 999px 999px 0; border-left: 0; padding: 6px 10px 6px 8px; color: var(--muted); display: inline-flex; align-items: center }
+.t-filter .cat-pen:hover { color: var(--ink) }
+.t-filter .cat-pen .i { width: 14px; height: 14px }
 .cat-sheet { max-width: 420px }
 .t-filter { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px }
 .t-filter button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13.5px; cursor: pointer }
@@ -502,7 +507,8 @@ function renderList() {
   const all = live().filter(r => r.tipo === view), groups = catList(view);
   if (lFilter !== "todas" && !groups.some(c => c.id === lFilter)) lFilter = "todas";
   $("l-filter").innerHTML = [{ id: "todas", nome: "Todas" }].concat(groups).map(c =>
-    `<button type="button" data-lfilter="${esc(c.id)}" aria-pressed="${lFilter === c.id}">${esc(c.nome)}<span>${c.id === "todas" ? all.length : all.filter(r => r.categoria === c.id).length}</span></button>`).join("");
+    `<span class="cw"><button type="button" data-lfilter="${esc(c.id)}" aria-pressed="${lFilter === c.id}">${esc(c.nome)}<span>${c.id === "todas" ? all.length : all.filter(r => r.categoria === c.id).length}</span></button>${c.id === "todas" ? "" :
+      `<button type="button" class="cat-pen" data-catedit="${esc(c.id)}" aria-label="Editar categoria ${esc(c.nome)}" title="Editar categoria">${icon("pen")}</button>`}</span>`).join("");
   const list = lFilter === "todas" ? all : all.filter(r => r.categoria === lFilter);
   if (!list.length) { $("list").innerHTML = `<p class="empty">${lFilter === "todas" ? "Nada cadastrado ainda." : "Nada nesta categoria ainda."} Toque em “Adicionar”.</p>`; return; }
   $("list").innerHTML = groups.map(g => {
@@ -550,9 +556,11 @@ async function purge(ids) {
 }
 
 /* ---------- categorias ---------- */
-function openCat() {
-  $("c-title").textContent = view === "item" ? "Adicionar categoria ao cardápio" : "Adicionar categoria de ingredientes";
-  $("c-nome").value = ""; $("c-msg").textContent = "";
+let catEditing = null;
+function openCat(id) {
+  catEditing = id ? catList(view).find(c => c.id === id) : null;
+  $("c-title").textContent = catEditing ? `Editar categoria ${catEditing.nome}` : view === "item" ? "Adicionar categoria ao cardápio" : "Adicionar categoria de ingredientes";
+  $("c-nome").value = catEditing ? catEditing.nome : ""; $("c-msg").textContent = "";
   $("cv").hidden = false; document.body.style.overflow = "hidden"; $("c-nome").focus();
 }
 function closeCat() { $("cv").hidden = true; document.body.style.overflow = ""; }
@@ -561,6 +569,7 @@ $("cat-form").addEventListener("submit", async e => {
   e.preventDefault();
   const nome = $("c-nome").value.trim().replace(/\s+/g, " "), tipo = view;
   if (!nome) { $("c-msg").textContent = "Escreva o nome da categoria."; return; }
+  if (catEditing) return saveCatEdit(catEditing, nome, tipo);
   const id = tipo === "item" ? slug(nome) : nome;
   if (!id) { $("c-msg").textContent = "Use letras ou números no nome."; return; }
   if (catList(tipo).some(c => c.id === id || c.nome.toLowerCase() === nome.toLowerCase())) { $("c-msg").textContent = "Essa categoria já existe."; return; }
@@ -573,6 +582,29 @@ $("cat-form").addEventListener("submit", async e => {
   } catch (err) { $("c-msg").textContent = "Não foi possível salvar: " + err.message; }
   finally { $("c-save").disabled = false; }
 });
+
+// Renomeia. No cardápio o id (usado nos pratos) fica igual; nos ingredientes o nome é o id, então os ingredientes mudam junto.
+async function saveCatEdit(old, nome, tipo) {
+  if (tipo === "item") nome = cap(nome);
+  if (nome === old.nome) { closeCat(); return; }
+  if (catList(tipo).some(c => c.id !== old.id && (c.nome.toLowerCase() === nome.toLowerCase() || c.id === nome))) { $("c-msg").textContent = "Já existe uma categoria com esse nome."; return; }
+  const newId = tipo === "item" ? old.id : nome, q = `tipo=eq.${tipo}&id=eq.${encodeURIComponent(old.id)}`;
+  const stored = categorias.some(c => c.tipo === tipo && c.id === old.id);
+  $("c-save").disabled = true;
+  try {
+    if (newId !== old.id) {
+      const changed = await api(`dayse?tipo=eq.${tipo}&categoria=eq.${encodeURIComponent(old.id)}`, { method: "PATCH", body: JSON.stringify({ categoria: newId }) });
+      (changed || []).forEach(row => { rows = rows.map(r => r.id === row.id ? row : r); });
+    }
+    const [row] = stored
+      ? await api(`dayse_categorias?${q}`, { method: "PATCH", body: JSON.stringify({ id: newId, nome }) })
+      : await api("dayse_categorias", { method: "POST", body: JSON.stringify({ tipo, id: newId, nome, ordem: Math.max(-1, ...categorias.filter(c => c.tipo === tipo).map(c => c.ordem)) + 1 }) });
+    categorias = categorias.filter(c => !(c.tipo === tipo && c.id === old.id)).concat(row);
+    if (lFilter === old.id) lFilter = newId;
+    closeCat(); renderList(); toast(`Categoria renomeada para ${nome}`);
+  } catch (err) { $("c-msg").textContent = "Não foi possível salvar: " + err.message; }
+  finally { $("c-save").disabled = false; }
+}
 
 /* ---------- cliques ---------- */
 document.addEventListener("click", async e => {
@@ -596,6 +628,7 @@ document.addEventListener("click", async e => {
   }
   else if (d.lfilter) { lFilter = d.lfilter; renderList(); }
   else if (t.id === "cat-add") openCat();
+  else if (d.catedit) openCat(d.catedit);
   else if (t.id === "c-cancel") closeCat();
   else if (d.tfilter) { tFilter = d.tfilter; trashConfirm = null; renderTrash(); }
   else if (d.purge) { trashConfirm = d.purge; renderTrash(); }
