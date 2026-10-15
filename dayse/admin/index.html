@@ -72,7 +72,10 @@ svg.i { width: 16px; height: 16px; flex: none }
 .r-grip { border: 0; background: none; padding: 6px 0; margin: -6px 0; color: var(--muted); cursor: grab; touch-action: none; display: flex; align-items: center; justify-content: center; align-self: stretch }
 .r-grip:hover { color: var(--ink) }
 .r-grip .i { width: 20px; height: 20px }
-.row.dragging { opacity: .9; box-shadow: 0 8px 24px rgba(0,0,0,.18); border-color: var(--brand-gold); position: relative; z-index: 2 }
+.row.dragging { position: fixed; z-index: 60; margin: 0; pointer-events: none; box-shadow: 0 14px 34px rgba(0,0,0,.22); border-color: var(--brand-gold); transform: scale(1.02) rotate(-.6deg); transition: transform .15s, box-shadow .15s }
+.row.dragging.landing { transform: none; box-shadow: none; transition: top .16s ease, left .16s ease, transform .16s, box-shadow .16s }
+.row-ph { border: 2px dashed var(--brand-gold); border-radius: 12px; margin-bottom: 8px; background: rgba(198,161,91,.08) }
+body.row-dragging, body.row-dragging * { cursor: grabbing !important; user-select: none }
 .row.dragging .r-grip { cursor: grabbing }
 .row.off { background: transparent; border-style: dashed }
 .row.off > :not(.r-act), .row.off .r-act > .btn { opacity: .5 }
@@ -661,27 +664,48 @@ async function endCatDrag() {
 }
 
 // Arrastar pelo ícone de três linhas reordena os itens dentro da categoria.
+// O item flutua seguindo o ponteiro; um espaço tracejado marca onde ele vai cair.
 let rowDrag = null;
 $("list").addEventListener("pointerdown", e => {
   const h = e.target.closest(".r-grip"); if (!h || e.button > 0) return;
   e.preventDefault();
-  const row = h.closest(".row");
-  rowDrag = { row, group: row.parentNode, id: e.pointerId, before: [...row.parentNode.querySelectorAll(".row")].map(x => x.dataset.row) };
-  row.classList.add("dragging"); try { h.setPointerCapture(e.pointerId); } catch (_) {}
+  const row = h.closest(".row"), r = row.getBoundingClientRect();
+  const ph = document.createElement("div"); ph.className = "row-ph"; ph.style.height = r.height + "px";
+  row.parentNode.insertBefore(ph, row);
+  Object.assign(row.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px" });
+  row.classList.add("dragging"); document.body.classList.add("row-dragging");
+  rowDrag = { row, ph, group: row.parentNode, id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, y: e.clientY,
+    before: [...row.parentNode.querySelectorAll(".row")].map(x => x.dataset.row) };
 });
 addEventListener("pointermove", e => {
   if (!rowDrag || e.pointerId !== rowDrag.id) return;
   e.preventDefault();
-  const { row, group } = rowDrag;
-  const over = [...group.querySelectorAll(".row")].filter(x => x !== row).find(x => { const r = x.getBoundingClientRect(); return e.clientY >= r.top && e.clientY <= r.bottom; });
-  if (over) { const r = over.getBoundingClientRect(); group.insertBefore(row, e.clientY < r.top + r.height / 2 ? over : over.nextSibling); }
+  const { row, ph, group } = rowDrag;
+  rowDrag.y = e.clientY;
+  row.style.left = e.clientX - rowDrag.dx + "px"; row.style.top = e.clientY - rowDrag.dy + "px";
+  // O espaço vai para antes do primeiro item cujo meio está abaixo do ponteiro.
+  const others = [...group.querySelectorAll(".row:not(.dragging)")];
+  const next = others.find(x => { const q = x.getBoundingClientRect(); return e.clientY < q.top + q.height / 2; }) || null;
+  const target = next || (others.length ? others[others.length - 1].nextSibling : ph);
+  if (target !== ph && ph.nextSibling !== target) {
+    const first = new Map(others.map(x => [x, x.getBoundingClientRect().top]));
+    group.insertBefore(ph, target);
+    others.forEach(x => { const d = first.get(x) - x.getBoundingClientRect().top; if (!d) return;
+      x.style.transition = "none"; x.style.transform = `translateY(${d}px)`;
+      requestAnimationFrame(() => { x.style.transition = "transform .15s ease"; x.style.transform = ""; }); });
+  }
   if (e.clientY < 60) scrollBy(0, -12); else if (e.clientY > innerHeight - 60) scrollBy(0, 12);
 });
 addEventListener("pointerup", e => { if (rowDrag && e.pointerId === rowDrag.id) endRowDrag(); });
 addEventListener("pointercancel", e => { if (rowDrag && e.pointerId === rowDrag.id) endRowDrag(); });
 async function endRowDrag() {
-  const { row, group, before } = rowDrag; rowDrag = null;
-  row.classList.remove("dragging");
+  const { row, ph, group, before } = rowDrag; rowDrag = null;
+  // Pousa o item no espaço e só então o devolve à lista.
+  const r = ph.getBoundingClientRect();
+  row.classList.add("landing"); row.style.left = r.left + "px"; row.style.top = r.top + "px";
+  await new Promise(ok => setTimeout(ok, 170));
+  group.insertBefore(row, ph); ph.remove();
+  row.classList.remove("dragging", "landing"); row.removeAttribute("style"); document.body.classList.remove("row-dragging");
   const ids = [...group.querySelectorAll(".row")].map(x => x.dataset.row);
   if (ids.join("\n") === before.join("\n")) return;
   const prev = rows.map(r => ({ ...r }));
