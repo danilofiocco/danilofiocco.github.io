@@ -219,6 +219,9 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 .l-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px }
 .l-filter .t-filter { margin-bottom: 0 }
 .cw { display: inline-flex }
+.cw[data-cid] > button:first-child { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none }
+.cw.dragging { opacity: .55 }
+.cw.dragging > button { cursor: grabbing; box-shadow: 0 0 0 2px var(--brand-gold) }
 .cw > button:first-child:not(:only-child) { border-radius: 999px 0 0 999px; padding-right: 10px }
 .t-filter .cat-pen { border-radius: 0 999px 999px 0; border-left: 0; padding: 6px 10px 6px 8px; color: var(--muted); display: inline-flex; align-items: center }
 .t-filter .cat-pen:hover { color: var(--ink) }
@@ -507,7 +510,7 @@ function renderList() {
   const all = live().filter(r => r.tipo === view), groups = catList(view);
   if (lFilter !== "todas" && !groups.some(c => c.id === lFilter)) lFilter = "todas";
   $("l-filter").innerHTML = [{ id: "todas", nome: "Todas" }].concat(groups).map(c =>
-    `<span class="cw"><button type="button" data-lfilter="${esc(c.id)}" aria-pressed="${lFilter === c.id}">${esc(c.nome)}<span>${c.id === "todas" ? all.length : all.filter(r => r.categoria === c.id).length}</span></button>${c.id === "todas" ? "" :
+    `<span class="cw"${c.id === "todas" ? "" : ` data-cid="${esc(c.id)}"`}><button type="button" data-lfilter="${esc(c.id)}" aria-pressed="${lFilter === c.id}"${c.id === "todas" ? "" : ` title="Arraste para reordenar"`}>${esc(c.nome)}<span>${c.id === "todas" ? all.length : all.filter(r => r.categoria === c.id).length}</span></button>${c.id === "todas" ? "" :
       `<button type="button" class="cat-pen" data-catedit="${esc(c.id)}" aria-label="Editar categoria ${esc(c.nome)}" title="Editar categoria">${icon("pen")}</button>`}</span>`).join("");
   const list = lFilter === "todas" ? all : all.filter(r => r.categoria === lFilter);
   if (!list.length) { $("list").innerHTML = `<p class="empty">${lFilter === "todas" ? "Nada cadastrado ainda." : "Nada nesta categoria ainda."} Toque em “Adicionar”.</p>`; return; }
@@ -606,9 +609,52 @@ async function saveCatEdit(old, nome, tipo) {
   finally { $("c-save").disabled = false; }
 }
 
+// Arrastar as categorias muda a ordem delas (no admin e no site).
+let catDrag = null, catDragged = false;
+$("l-filter").addEventListener("pointerdown", e => {
+  const w = e.target.closest(".cw[data-cid]"); if (!w || e.button > 0 || e.target.closest(".cat-pen")) return;
+  catDrag = { w, x: e.clientX, y: e.clientY, on: false, id: e.pointerId };
+});
+addEventListener("pointermove", e => {
+  if (!catDrag || e.pointerId !== catDrag.id) return;
+  const { w } = catDrag;
+  if (!catDrag.on) {
+    if (Math.hypot(e.clientX - catDrag.x, e.clientY - catDrag.y) < 6) return;
+    catDrag.on = true; w.classList.add("dragging"); try { w.firstChild.setPointerCapture(e.pointerId); } catch (_) {}
+  }
+  e.preventDefault();
+  const over = [...$("l-filter").querySelectorAll(".cw[data-cid]")].filter(x => x !== w).find(x => {
+    const r = x.getBoundingClientRect(); return e.clientY >= r.top - 4 && e.clientY <= r.bottom + 4 && e.clientX >= r.left && e.clientX <= r.right; });
+  if (!over) return;
+  const r = over.getBoundingClientRect();
+  over.parentNode.insertBefore(w, e.clientX < r.left + r.width / 2 ? over : over.nextSibling);
+});
+addEventListener("pointerup", e => { if (catDrag && e.pointerId === catDrag.id) endCatDrag(); });
+addEventListener("pointercancel", e => { if (catDrag && e.pointerId === catDrag.id) endCatDrag(); });
+async function endCatDrag() {
+  const { w, on } = catDrag; catDrag = null;
+  if (!on) return;
+  w.classList.remove("dragging"); catDragged = true; setTimeout(() => catDragged = false, 50);
+  const tipo = view, ids = [...$("l-filter").querySelectorAll(".cw[data-cid]")].map(x => x.dataset.cid);
+  const before = catList(tipo).map(c => c.id);
+  if (ids.join("\n") === before.join("\n")) return;
+  const names = Object.fromEntries(catList(tipo).map(c => [c.id, c.nome]));
+  // Atualiza na hora; grava no banco em seguida.
+  const prev = categorias;
+  categorias = categorias.filter(c => c.tipo !== tipo).concat(ids.map((id, ordem) => ({ ...(categorias.find(c => c.tipo === tipo && c.id === id) || { tipo, id, nome: names[id] }), ordem })));
+  renderList();
+  try {
+    await Promise.all(ids.map((id, ordem) => prev.some(c => c.tipo === tipo && c.id === id)
+      ? (prev.find(c => c.tipo === tipo && c.id === id).ordem === ordem ? null : api(`dayse_categorias?tipo=eq.${tipo}&id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ ordem }), headers: { Prefer: "return=minimal" } }))
+      : api("dayse_categorias", { method: "POST", body: JSON.stringify({ tipo, id, nome: names[id], ordem }), headers: { Prefer: "return=minimal" } })));
+    toast("Ordem das categorias salva");
+  } catch (err) { categorias = prev; renderList(); toast("Não foi possível salvar a ordem: " + err.message); }
+}
+
 /* ---------- cliques ---------- */
 document.addEventListener("click", async e => {
   const t = e.target.closest("button"); if (!t) return;
+  if (catDragged && t.dataset.lfilter) return;
   const d = t.dataset;
   if (d.view) show(d.view);
   else if (d.edit) openEdit(rows.find(r => r.id === d.edit));
