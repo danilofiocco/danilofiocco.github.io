@@ -267,7 +267,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <nav class="nav" id="nav" hidden aria-label="Seções">
       <button data-view="pedidos" aria-current="true"><svg class="i"><use href="#i-ticket"/></svg>Pedidos <span id="ped-count">(0)</span></button>
       <button data-view="item" aria-current="false">Cardápio</button>
-      <button data-view="ingrediente" aria-current="false">Ingredientes</button>
+      <button data-view="ingrediente" aria-current="false">Monte seu Prato</button>
       <button data-view="horario" aria-current="false"><svg class="i"><use href="#i-clock"/></svg>Horários<span class="state" id="state" hidden></span></button>
       <button data-view="config" aria-current="false"><svg class="i"><use href="#i-gear"/></svg>Configurações</button>
     </nav>
@@ -480,7 +480,7 @@ function show(v) {
   view = v;
   document.querySelectorAll("#nav button").forEach(b => b.setAttribute("aria-current", b.dataset.view === v));
   $("v-list").hidden = v !== "item" && v !== "ingrediente"; $("v-hours").hidden = v !== "horario"; $("v-config").hidden = v !== "config"; $("v-orders").hidden = v !== "pedidos";
-  $("list-title").textContent = v === "item" ? "Cardápio" : "Ingredientes";
+  $("list-title").textContent = v === "item" ? "Cardápio" : "Monte seu Prato";
   renderList(); if (v === "pedidos") renderOrders();
   document.body.classList.toggle("wide", v === "pedidos");
 }
@@ -535,7 +535,7 @@ function renderList() {
 }
 
 /* ---------- lixeira ---------- */
-const T_FILTERS = [["todos", "Todos"], ["item", "Cardápio"], ["ingrediente", "Ingredientes"]];
+const T_FILTERS = [["todos", "Todos"], ["item", "Cardápio"], ["ingrediente", "Monte seu Prato"]];
 const trashShown = () => trashed().filter(r => tFilter === "todos" || r.tipo === tFilter);
 function renderTrash() {
   const all = trashed(), list = trashShown();
