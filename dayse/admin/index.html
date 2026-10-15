@@ -67,8 +67,13 @@ svg.i { width: 16px; height: 16px; flex: none }
 .bar h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 24px }
 .tools { display: flex; gap: 8px; flex-wrap: wrap }
 .group h3 { font-family: var(--display); font-weight: 400; font-size: 18px; margin: 20px 0 6px }
-.row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px }
-.row.nothumb { grid-template-columns: minmax(0, 1fr) auto }
+.row { display: grid; grid-template-columns: 22px 56px minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px }
+.row.nothumb { grid-template-columns: 22px minmax(0, 1fr) auto }
+.r-grip { border: 0; background: none; padding: 6px 0; margin: -6px 0; color: var(--muted); cursor: grab; touch-action: none; display: flex; align-items: center; justify-content: center; align-self: stretch }
+.r-grip:hover { color: var(--ink) }
+.r-grip .i { width: 20px; height: 20px }
+.row.dragging { opacity: .9; box-shadow: 0 8px 24px rgba(0,0,0,.18); border-color: var(--brand-gold); position: relative; z-index: 2 }
+.row.dragging .r-grip { cursor: grabbing }
 .row.off { background: transparent; border-style: dashed }
 .row.off > :not(.r-act), .row.off .r-act > .btn { opacity: .5 }
 .r-name { font-weight: 800 }
@@ -89,7 +94,7 @@ svg.i { width: 16px; height: 16px; flex: none }
 .switch input:focus-visible + .track { outline: 3px solid var(--brand-gold); outline-offset: 2px }
 .switch input:disabled + .track { opacity: .5 }
 @media (prefers-reduced-motion: reduce) { .switch .track, .switch .track::after { transition: none } }
-@media (max-width: 560px) { .row { grid-template-columns: 56px minmax(0, 1fr) } .row.nothumb { grid-template-columns: minmax(0, 1fr) } .r-act { grid-column: 1 / -1; justify-content: flex-start } .r-act .switch { margin-left: auto } }
+@media (max-width: 560px) { .row { grid-template-columns: 22px 56px minmax(0, 1fr) } .row.nothumb { grid-template-columns: 22px minmax(0, 1fr) } .r-act { grid-column: 1 / -1; justify-content: flex-start } .r-act .switch { margin-left: auto } }
 .empty { color: var(--muted); padding: 24px 0 }
 
 /* horário de funcionamento */
@@ -258,6 +263,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   <symbol id="i-print" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M7 8V3h10v5M7 17H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3M7 14h10v7H7z"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+  <symbol id="i-drag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M5 7h14M5 12h14M5 17h14"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 7v5l3 2"/></symbol>
 </svg>
 
@@ -517,8 +523,9 @@ function renderList() {
   if (!list.length) { $("list").innerHTML = `<p class="empty">${lFilter === "todas" ? "Nada cadastrado ainda." : "Nada nesta categoria ainda."} Toque em “Adicionar”.</p>`; return; }
   $("list").innerHTML = groups.map(g => {
     const items = list.filter(r => r.categoria === g.id); if (!items.length) return "";
-    return `<div class="group"><h3>${esc(g.nome)}</h3>${items.map(r => `
-      <div class="row${r.ativo ? "" : " off"}${r.tipo === "item" ? "" : " nothumb"}">
+    return `<div class="group" data-group="${esc(g.id)}"><h3>${esc(g.nome)}</h3>${items.map(r => `
+      <div class="row${r.ativo ? "" : " off"}${r.tipo === "item" ? "" : " nothumb"}" data-row="${esc(r.id)}">
+        <button type="button" class="r-grip" aria-label="Arrastar ${esc(r.nome)} para reordenar" title="Arraste para reordenar">${icon("drag")}</button>
         ${r.tipo === "item" ? thumbHTML(r) : ""}
         <div>
           <div class="r-name">${esc(r.nome)} ${r.ativo ? "" : `<span class="chip">Oculto</span>`}</div>
@@ -651,6 +658,41 @@ async function endCatDrag() {
       : api("dayse_categorias", { method: "POST", body: JSON.stringify({ tipo, id, nome: names[id], ordem }), headers: { Prefer: "return=minimal" } })));
     toast("Ordem das categorias salva");
   } catch (err) { categorias = prev; renderList(); toast("Não foi possível salvar a ordem: " + err.message); }
+}
+
+// Arrastar pelo ícone de três linhas reordena os itens dentro da categoria.
+let rowDrag = null;
+$("list").addEventListener("pointerdown", e => {
+  const h = e.target.closest(".r-grip"); if (!h || e.button > 0) return;
+  e.preventDefault();
+  const row = h.closest(".row");
+  rowDrag = { row, group: row.parentNode, id: e.pointerId, before: [...row.parentNode.querySelectorAll(".row")].map(x => x.dataset.row) };
+  row.classList.add("dragging"); try { h.setPointerCapture(e.pointerId); } catch (_) {}
+});
+addEventListener("pointermove", e => {
+  if (!rowDrag || e.pointerId !== rowDrag.id) return;
+  e.preventDefault();
+  const { row, group } = rowDrag;
+  const over = [...group.querySelectorAll(".row")].filter(x => x !== row).find(x => { const r = x.getBoundingClientRect(); return e.clientY >= r.top && e.clientY <= r.bottom; });
+  if (over) { const r = over.getBoundingClientRect(); group.insertBefore(row, e.clientY < r.top + r.height / 2 ? over : over.nextSibling); }
+  if (e.clientY < 60) scrollBy(0, -12); else if (e.clientY > innerHeight - 60) scrollBy(0, 12);
+});
+addEventListener("pointerup", e => { if (rowDrag && e.pointerId === rowDrag.id) endRowDrag(); });
+addEventListener("pointercancel", e => { if (rowDrag && e.pointerId === rowDrag.id) endRowDrag(); });
+async function endRowDrag() {
+  const { row, group, before } = rowDrag; rowDrag = null;
+  row.classList.remove("dragging");
+  const ids = [...group.querySelectorAll(".row")].map(x => x.dataset.row);
+  if (ids.join("\n") === before.join("\n")) return;
+  const prev = rows.map(r => ({ ...r }));
+  const changed = ids.filter((id, i) => rows.find(r => r.id === id).ordem !== i);
+  rows = rows.map(r => ids.includes(r.id) ? { ...r, ordem: ids.indexOf(r.id) } : r)
+    .sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome));
+  renderList();
+  try {
+    await Promise.all(changed.map(id => api(`dayse?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ ordem: ids.indexOf(id) }), headers: { Prefer: "return=minimal" } })));
+    toast("Nova ordem salva");
+  } catch (err) { rows = prev; renderList(); toast("Não foi possível salvar a ordem: " + err.message); }
 }
 
 /* ---------- cliques ---------- */
