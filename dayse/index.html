@@ -198,6 +198,13 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .closed-bar { background: var(--closed); color: #fff; font-weight: 700; font-size: 14.5px; text-align: center; padding-block: 10px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
 .add:disabled, .add:disabled:hover { background: var(--line); color: var(--muted); box-shadow: none; cursor: not-allowed; filter: none }
+.lightbox { margin: 0; position: fixed; inset: 0; z-index: 90; background: rgba(8,14,11,.9); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 56px 16px 24px; cursor: zoom-out }
+.lightbox img { max-width: min(900px, 100%); max-height: calc(100vh - 120px); border-radius: 14px; object-fit: contain; box-shadow: 0 10px 40px rgba(0,0,0,.5); animation: lb-in .2s ease-out }
+.lightbox figcaption { color: #f2ece0; font-family: var(--display); font-size: 20px; text-align: center }
+.lightbox button { position: fixed; top: 12px; right: 16px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: #f2ece0; color: #214b3d; font-size: 28px; line-height: 1; cursor: pointer }
+@keyframes lb-in { from { transform: scale(.92); opacity: 0 } }
+@media (prefers-reduced-motion: reduce) { .lightbox img { animation: none } }
+.plate.has-photo { cursor: zoom-in }
 </style>
 </head>
 <body>
@@ -319,6 +326,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
   </form>
 </div>
 
+<figure class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Foto ampliada"><button type="button" aria-label="Fechar">×</button><img id="lb-img" alt=""><figcaption id="lb-cap"></figcaption></figure>
 <script>
 const CATEGORIES = [
   { id: "pratos", name: "Pratos" },
@@ -802,6 +810,21 @@ async function loadHours() {
 loadHours();
 setInterval(applyHours, 60000);
 setInterval(loadHours, 5 * 60000);
+
+// Foto ampliada: tocar numa foto abre ela grande; tocar em qualquer lugar ou Esc fecha.
+function openPhoto(src, cap) {
+  const lb = document.getElementById("lightbox");
+  document.getElementById("lb-img").src = src; document.getElementById("lb-img").alt = cap || "";
+  document.getElementById("lb-cap").textContent = cap || "";
+  lb.hidden = false; lb.querySelector("button").focus();
+}
+function closePhoto() { const lb = document.getElementById("lightbox"); lb.hidden = true; document.getElementById("lb-img").removeAttribute("src"); }
+document.getElementById("lightbox").addEventListener("click", closePhoto);
+addEventListener("keydown", e => { if (e.key === "Escape" && !document.getElementById("lightbox").hidden) { e.stopImmediatePropagation(); closePhoto(); } }, true);
+document.addEventListener("click", e => {
+  const img = e.target.closest(".plate.has-photo img"); if (!img || !img.getAttribute("src")) return;
+  e.preventDefault(); e.stopPropagation(); openPhoto(img.currentSrc || img.src, img.alt);
+}, true);
 </script>
 
 </body>

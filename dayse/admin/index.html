@@ -226,6 +226,13 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 @media (max-width: 480px) { .trash-row { grid-template-columns: minmax(0, 1fr) } }
 .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; z-index: 60; max-width: calc(100% - 32px); text-align: center }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .card:focus-visible { outline: 3px solid var(--brand-gold); outline-offset: 2px }
+.lightbox { margin: 0; position: fixed; inset: 0; z-index: 90; background: rgba(8,14,11,.9); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 56px 16px 24px; cursor: zoom-out }
+.lightbox img { max-width: min(900px, 100%); max-height: calc(100vh - 120px); border-radius: 14px; object-fit: contain; box-shadow: 0 10px 40px rgba(0,0,0,.5); animation: lb-in .2s ease-out }
+.lightbox figcaption { color: #f2ece0; font-family: var(--display); font-size: 20px; text-align: center }
+.lightbox button { position: fixed; top: 12px; right: 16px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: #f2ece0; color: #214b3d; font-size: 28px; line-height: 1; cursor: pointer }
+@keyframes lb-in { from { transform: scale(.92); opacity: 0 } }
+@media (prefers-reduced-motion: reduce) { .lightbox img { animation: none } }
+.thumb.has { cursor: zoom-in }
 </style>
 </head>
 <body>
@@ -356,6 +363,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 <div class="toast" id="toast" hidden></div>
 <div id="print-area" aria-hidden="true"></div>
 
+<figure class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Foto ampliada"><button type="button" aria-label="Fechar">×</button><img id="lb-img" alt=""><figcaption id="lb-cap"></figcaption></figure>
 <script>
 const SUPABASE_URL = "https://wkhfpujnynwflcimngjg.supabase.co";
 const SUPABASE_KEY = "sb_publishable_KJAWjztbbgQqlC6IYCYS4g_eeuVSd1z";
@@ -928,6 +936,21 @@ function ringBell() {
 }
 
 if (session && session.token) start();
+
+// Foto ampliada: tocar numa foto abre ela grande; tocar em qualquer lugar ou Esc fecha.
+function openPhoto(src, cap) {
+  const lb = document.getElementById("lightbox");
+  document.getElementById("lb-img").src = src; document.getElementById("lb-img").alt = cap || "";
+  document.getElementById("lb-cap").textContent = cap || "";
+  lb.hidden = false; lb.querySelector("button").focus();
+}
+function closePhoto() { const lb = document.getElementById("lightbox"); lb.hidden = true; document.getElementById("lb-img").removeAttribute("src"); }
+document.getElementById("lightbox").addEventListener("click", closePhoto);
+addEventListener("keydown", e => { if (e.key === "Escape" && !document.getElementById("lightbox").hidden) { e.stopImmediatePropagation(); closePhoto(); } }, true);
+document.addEventListener("click", e => {
+  const img = e.target.closest(".thumb.has img"); if (!img || !img.getAttribute("src")) return;
+  e.preventDefault(); e.stopPropagation(); openPhoto(img.currentSrc || img.src, (img.closest(".row")?.querySelector(".r-name")?.firstChild?.textContent || $("e-nome").value || "").trim());
+}, true);
 </script>
 </body>
 </html>
