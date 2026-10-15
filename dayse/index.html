@@ -174,7 +174,6 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 .b-sort::-webkit-scrollbar { display: none }
 .b-sort-l { font-size: 13px; font-weight: 700; color: var(--muted); white-space: nowrap }
 .sort-chip { font: inherit; font-size: 13px; font-weight: 700; white-space: nowrap; padding: 6px 10px; border-radius: 999px; cursor: pointer; background: var(--surface); color: var(--ink); border: 1px solid var(--line); display: inline-flex; align-items: center; gap: 5px; flex: none }
-.sort-chip[style]::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--c) }
 .sort-chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
 .b-list { overflow-y: auto; flex: 1; padding: 0 22px 8px; min-height: 0 }
 .b-group h3 { font-family: var(--display); font-weight: 400; font-size: 16px; margin: 14px 0 4px; color: var(--muted) }
@@ -267,13 +266,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
       <button type="button" class="back" id="b-close">Fechar</button>
     </div>
     <p class="b-intro">Escolha os ingredientes e quantas porções de cada um você quer.</p>
-    <div class="b-sort" role="group" aria-label="Ordenar ingredientes">
-      <span class="b-sort-l">Ordenar</span>
-      <button type="button" class="sort-chip" data-bsort="grupo" aria-pressed="true">Grupo</button>
-      <button type="button" class="sort-chip" data-bsort="prot" aria-pressed="false" style="--c: var(--m-prot)" title="Mais proteína primeiro">Proteína</button>
-      <button type="button" class="sort-chip" data-bsort="gord" aria-pressed="false" style="--c: var(--m-fat)" title="Mais gordura primeiro">Gordura</button>
-      <button type="button" class="sort-chip" data-bsort="carbo" aria-pressed="false" style="--c: var(--m-carb)" title="Mais carbo primeiro">Carbo</button>
-    </div>
+    <div class="b-sort" id="b-cats" role="group" aria-label="Filtrar por categoria"></div>
     <div class="b-list" id="b-list"></div>
     <div class="b-foot">
       <span class="macros" id="b-macros"></span>
@@ -543,7 +536,7 @@ document.addEventListener("click", e => {
   else if (t.dataset.binc) { building[t.dataset.binc] = Math.min(9, (building[t.dataset.binc] || 0) + 1); renderBuilder(); }
   else if (t.dataset.bdec) { building[t.dataset.bdec] = Math.max(0, (building[t.dataset.bdec] || 0) - 1); if (!building[t.dataset.bdec]) delete building[t.dataset.bdec]; renderBuilder(); }
   else if (t.id === "b-add") addPlate();
-  else if (t.dataset.bsort) { bSort = t.dataset.bsort; renderBuilderList(); }
+  else if (t.dataset.bcat) { bCat = +t.dataset.bcat; showBuilderCat(); }
   else if (t.dataset.ings) showIngredients(t.dataset.ings);
   else if (t.dataset.cat) {
     document.getElementById("cat-" + t.dataset.cat).scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
@@ -598,23 +591,20 @@ function closeOverlay(id) {
   document.getElementById(id).hidden = true;
   if ([...document.querySelectorAll(".overlay")].every(o => o.hidden)) document.body.style.overflow = "";
 }
-let bSort = "grupo";
-// Fração do macro escolhido no total de macros do ingrediente (0 a 1).
-const share = (mac, m) => { const t = mac[0] + mac[1] + mac[2]; return t ? mac[m] / t : 0; };
+let bCat = -1; // -1 = todas; senão, o índice da categoria em INGREDIENTS
 function openBuilder() {
-  building = {}; bSort = "grupo";
+  building = {}; bCat = -1;
   renderBuilderList();
   openOverlay("b-overlay");
   document.getElementById("b-close").focus();
 }
-// Lista de ingredientes: por grupo, ou numa lista única do maior para o menor valor do macro escolhido.
+// Lista de ingredientes por categoria (as do admin, na ordem do admin), com filtro por categoria.
 function renderBuilderList() {
-  const m = { prot: 0, gord: 1, carbo: 2 }[bSort];
-  const groups = m === undefined ? INGREDIENTS.map(g => ({ group: g.group, ids: g.items.map(([id]) => id) }))
-    : [{ group: "", ids: Object.keys(ING).sort((a, b) => share(ING[b].macros, m) - share(ING[a].macros, m) || ING[b].macros[m] - ING[a].macros[m] || ING[a].name.localeCompare(ING[b].name)) }];
-  document.querySelectorAll("[data-bsort]").forEach(b => b.setAttribute("aria-pressed", b.dataset.bsort === bSort));
-  document.getElementById("b-list").innerHTML = groups.map(g => `
-    <div class="b-group">${g.group ? `<h3>${g.group}</h3>` : ""}${g.ids.map(id => { const it = ING[id]; return `
+  const groups = INGREDIENTS.map(g => ({ group: g.group, ids: g.items.map(([id]) => id) }));
+  document.getElementById("b-cats").innerHTML = [["Todos", -1]].concat(groups.map((g, i) => [g.group, i])).map(([name, i]) =>
+    `<button type="button" class="sort-chip" data-bcat="${i}" aria-pressed="false">${name}</button>`).join("");
+  document.getElementById("b-list").innerHTML = groups.map((g, gi) => `
+    <div class="b-group" data-bg="${gi}">${g.group ? `<h3>${g.group}</h3>` : ""}${g.ids.map(id => { const it = ING[id]; return `
       <div class="b-row" id="br-${id}">
         <span class="b-name">${it.name}<span class="b-sub">${brl.format(it.price)} · ${it.portion} · ${macroText(it.macros)}</span></span>
         <span class="qty">
@@ -624,6 +614,11 @@ function renderBuilderList() {
         </span>
       </div>`; }).join("")}</div>`).join("");
   renderBuilder();
+  showBuilderCat();
+}
+function showBuilderCat() {
+  document.querySelectorAll("[data-bcat]").forEach(b => b.setAttribute("aria-pressed", +b.dataset.bcat === bCat));
+  document.querySelectorAll("[data-bg]").forEach(g => g.hidden = bCat >= 0 && +g.dataset.bg !== bCat);
   document.getElementById("b-list").scrollTop = 0;
 }
 function renderBuilder() {
