@@ -178,6 +178,8 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 .b-list { overflow-y: auto; flex: 1; padding: 0 22px 8px; min-height: 0 }
 .b-group h3 { font-family: var(--display); font-weight: 400; font-size: 16px; margin: 14px 0 4px; color: var(--muted) }
 .b-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding-block: 8px; border-bottom: 1px solid var(--line) }
+.b-row { padding-inline: 10px; margin-inline: -10px; border-radius: 10px; transition: background .2s }
+.b-row.on { background: var(--hl); border-bottom-color: transparent }
 .b-row.on .b-name { color: var(--accent) }
 .b-name { font-weight: 700; font-size: 15px }
 .b-sub { display: block; font-size: 12.5px; color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums }
@@ -536,7 +538,7 @@ document.addEventListener("click", e => {
   else if (t.dataset.binc) { building[t.dataset.binc] = Math.min(9, (building[t.dataset.binc] || 0) + 1); renderBuilder(); }
   else if (t.dataset.bdec) { building[t.dataset.bdec] = Math.max(0, (building[t.dataset.bdec] || 0) - 1); if (!building[t.dataset.bdec]) delete building[t.dataset.bdec]; renderBuilder(); }
   else if (t.id === "b-add") addPlate();
-  else if (t.dataset.bcat) { bCat = +t.dataset.bcat; showBuilderCat(); }
+  else if (t.dataset.bcat) scrollBuilderCat(+t.dataset.bcat);
   else if (t.dataset.ings) showIngredients(t.dataset.ings);
   else if (t.dataset.cat) {
     document.getElementById("cat-" + t.dataset.cat).scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
@@ -591,18 +593,17 @@ function closeOverlay(id) {
   document.getElementById(id).hidden = true;
   if ([...document.querySelectorAll(".overlay")].every(o => o.hidden)) document.body.style.overflow = "";
 }
-let bCat = -1; // -1 = todas; senão, o índice da categoria em INGREDIENTS
 function openBuilder() {
-  building = {}; bCat = -1;
+  building = {};
   renderBuilderList();
   openOverlay("b-overlay");
   document.getElementById("b-close").focus();
 }
-// Lista de ingredientes por categoria (as do admin, na ordem do admin), com filtro por categoria.
+// Lista de ingredientes por categoria (as do admin, na ordem do admin); tocar numa categoria rola até ela.
 function renderBuilderList() {
   const groups = INGREDIENTS.map(g => ({ group: g.group, ids: g.items.map(([id]) => id) }));
-  document.getElementById("b-cats").innerHTML = [["Todos", -1]].concat(groups.map((g, i) => [g.group, i])).map(([name, i]) =>
-    `<button type="button" class="sort-chip" data-bcat="${i}" aria-pressed="false">${name}</button>`).join("");
+  document.getElementById("b-cats").innerHTML = groups.map((g, i) =>
+    `<button type="button" class="sort-chip" data-bcat="${i}" aria-pressed="${i === 0}">${g.group}</button>`).join("");
   document.getElementById("b-list").innerHTML = groups.map((g, gi) => `
     <div class="b-group" data-bg="${gi}">${g.group ? `<h3>${g.group}</h3>` : ""}${g.ids.map(id => { const it = ING[id]; return `
       <div class="b-row" id="br-${id}">
@@ -614,13 +615,21 @@ function renderBuilderList() {
         </span>
       </div>`; }).join("")}</div>`).join("");
   renderBuilder();
-  showBuilderCat();
-}
-function showBuilderCat() {
-  document.querySelectorAll("[data-bcat]").forEach(b => b.setAttribute("aria-pressed", +b.dataset.bcat === bCat));
-  document.querySelectorAll("[data-bg]").forEach(g => g.hidden = bCat >= 0 && +g.dataset.bg !== bCat);
   document.getElementById("b-list").scrollTop = 0;
 }
+const groupTop = (list, g) => g.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop;
+function scrollBuilderCat(i) {
+  const list = document.getElementById("b-list"), g = list.querySelector(`[data-bg="${i}"]`); if (!g) return;
+  list.scrollTo({ top: i === 0 ? 0 : groupTop(list, g) - 4, behavior: "smooth" });
+}
+// Marca a categoria que está no topo da lista enquanto rola.
+document.getElementById("b-list").addEventListener("scroll", () => {
+  const list = document.getElementById("b-list"), gs = [...list.querySelectorAll("[data-bg]")]; if (!gs.length) return;
+  let cur = 0;
+  gs.forEach((g, i) => { if (groupTop(list, g) - list.scrollTop <= 24) cur = i; });
+  if (list.scrollTop + list.clientHeight >= list.scrollHeight - 2) cur = gs.length - 1;
+  document.querySelectorAll("[data-bcat]").forEach(b => b.setAttribute("aria-pressed", +b.dataset.bcat === cur));
+}, { passive: true });
 function renderBuilder() {
   Object.keys(ING).forEach(id => {
     const n = building[id] || 0;
