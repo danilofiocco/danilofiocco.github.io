@@ -119,6 +119,7 @@ svg.i { width: 16px; height: 16px; flex: none }
 
 .prazo { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; margin-bottom: 14px }
 .prazo h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 19px }
+.pix-in { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); width: min(300px, 100%); font: inherit }
 .prazo-in { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
 .sel { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px }
 .sel select { padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-weight: 700 }
@@ -247,6 +248,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   <symbol id="i-ticket" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 8h6M9 12h6M9 16h3"/></symbol>
   <symbol id="i-grip" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></g></symbol>
   <symbol id="i-print" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M7 8V3h10v5M7 17H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3M7 14h10v7H7z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 7v5l3 2"/></symbol>
 </svg>
 
@@ -257,7 +259,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       <button data-view="pedidos" aria-current="true"><svg class="i"><use href="#i-ticket"/></svg>Pedidos <span id="ped-count">(0)</span></button>
       <button data-view="item" aria-current="false">Cardápio</button>
       <button data-view="ingrediente" aria-current="false">Ingredientes</button>
-      <button data-view="horario" aria-current="false"><svg class="i"><use href="#i-clock"/></svg>Prazo de entrega e Horários<span class="state" id="state" hidden></span></button>
+      <button data-view="horario" aria-current="false"><svg class="i"><use href="#i-clock"/></svg>Horários<span class="state" id="state" hidden></span></button>
+      <button data-view="config" aria-current="false"><svg class="i"><use href="#i-gear"/></svg>Configurações</button>
     </nav>
     <button class="btn ghost small" id="logout" hidden>Sair</button>
   </div>
@@ -296,8 +299,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <div id="list"><p class="empty">Carregando…</p></div>
   </section>
 
-  <section id="v-hours" hidden>
-    <div class="bar"><h2>Prazo de entrega e Horários</h2></div>
+  <section id="v-config" hidden>
+    <div class="bar"><h2>Configurações</h2></div>
+    <div class="prazo">
+      <div><h3>Chave Pix</h3><p class="msg">Vai na mensagem de WhatsApp enviada ao cliente: “Efetue o pagamento via Pix para …”.</p></div>
+      <div class="prazo-in">
+        <input class="pix-in" id="pix" maxlength="100" placeholder="e-mail, telefone, CPF/CNPJ ou chave aleatória" aria-label="Chave Pix" autocomplete="off">
+        <button class="btn" id="save-pix">Salvar chave</button>
+      </div>
+    </div>
     <div class="prazo">
       <div><h3>Prazo de entrega</h3><p class="msg">Aparece para o cliente no fim dos dados de entrega: “Prazo de entrega de até …”.</p></div>
       <div class="prazo-in">
@@ -306,6 +316,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <button class="btn" id="save-prazo">Salvar prazo</button>
       </div>
     </div>
+  </section>
+
+  <section id="v-hours" hidden>
+    <div class="bar"><h2>Horários</h2></div>
     <div class="now" id="now"></div>
     <div class="cards" role="radiogroup" aria-label="Como o restaurante abre">
       <div class="card" id="card-prog" role="radio" tabindex="0" aria-checked="true">
@@ -434,7 +448,7 @@ $("login").addEventListener("submit", async e => {
 });
 function logout(msg) {
   session = null; keep();
-  ["v-list", "v-hours", "v-orders", "nav", "logout", "state"].forEach(id => $(id).hidden = true); $("login").hidden = false;
+  ["v-list", "v-hours", "v-config", "v-orders", "nav", "logout", "state"].forEach(id => $(id).hidden = true); $("login").hidden = false;
   $("l-msg").className = msg ? "msg err" : "msg"; $("l-msg").textContent = msg || "";
 }
 $("logout").addEventListener("click", () => logout());
@@ -456,7 +470,7 @@ function show(v) {
   if (v !== view) lFilter = "todas";
   view = v;
   document.querySelectorAll("#nav button").forEach(b => b.setAttribute("aria-current", b.dataset.view === v));
-  $("v-list").hidden = v !== "item" && v !== "ingrediente"; $("v-hours").hidden = v !== "horario"; $("v-orders").hidden = v !== "pedidos";
+  $("v-list").hidden = v !== "item" && v !== "ingrediente"; $("v-hours").hidden = v !== "horario"; $("v-config").hidden = v !== "config"; $("v-orders").hidden = v !== "pedidos";
   $("list-title").textContent = v === "item" ? "Cardápio" : "Ingredientes";
   renderList(); if (v === "pedidos") renderOrders();
   document.body.classList.toggle("wide", v === "pedidos");
@@ -749,7 +763,16 @@ function renderPrazo() {
   $("pz-h").innerHTML = [0, 1, 2, 3, 4, 5].map(h => `<option value="${h}">${h}</option>`).join("");
   $("pz-m").innerHTML = Array.from({ length: 12 }, (_, i) => i * 5).map(x => `<option value="${x}">${String(x).padStart(2, "0")}</option>`).join("");
   $("pz-h").value = Math.min(5, Math.floor(m / 60)); $("pz-m").value = Math.round(m % 60 / 5) * 5 % 60;
+  $("pix").value = pixKey();
 }
+const pixKey = () => (config && config.pix_chave) || "teste@teste.com";
+$("save-pix").addEventListener("click", async e => {
+  const b = e.currentTarget, k = $("pix").value.trim();
+  if (!k) { toast("Escreva a chave Pix."); return; }
+  b.disabled = true;
+  try { await saveConfig({ pix_chave: k }, "Chave Pix salva"); $("pix").value = pixKey(); }
+  catch (err) { toast("Não foi possível salvar: " + err.message); } finally { b.disabled = false; }
+});
 $("save-prazo").addEventListener("click", async e => {
   const b = e.currentTarget, m = +$("pz-h").value * 60 + +$("pz-m").value;
   if (!m) { toast("Escolha um prazo maior que zero."); return; }
@@ -803,7 +826,6 @@ setInterval(renderState, 20000);
 /* ---------- pedidos ---------- */
 const STATUS = ["novo", "preparo", "etiquetas", "enviado", "concluido"];
 const NEXT = { novo: ["preparo", "Pago · em preparação"], preparo: ["etiquetas", "Imprimir etiquetas"], etiquetas: ["enviado", "Enviados"], enviado: ["concluido", "Concluído"] };
-const PIX_KEY = "teste@teste.com";
 const EMPTY = { novo: "Nenhum pedido novo.", preparo: "Nada em preparação.", etiquetas: "Nenhuma etiqueta para imprimir.", enviado: "Nenhum pedido a caminho.", concluido: "Nenhum pedido concluído ainda." };
 async function loadOrders() {
   if (!session || drag) return;
@@ -826,7 +848,7 @@ function orderText(o) {
   return [`Olá, ${String(o.nome || "").trim()}. Somos da Fit & Massa e acabamos de receber seu pedido #${o.id}:`, "",
     ...(o.itens || []).map(i => `${+i.qtd}x ${i.nome} (${brl.format(i.qtd * i.preco)})${i.detalhe ? ": " + i.detalhe : ""}`),
     `Total: ${brl.format(+o.total)}`, "",
-    `Efetue o pagamento via Pix para ${PIX_KEY} e começaremos a preparação.`].join("\n");
+    `Efetue o pagamento via Pix para ${pixKey()} e começaremos a preparação.`].join("\n");
 }
 function waLink(num, o) {
   let d = String(num || "").replace(/\D/g, ""); if (!d) return "";
