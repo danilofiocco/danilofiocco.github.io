@@ -257,6 +257,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   <symbol id="i-grip" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></g></symbol>
   <symbol id="i-print" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M7 8V3h10v5M7 17H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3M7 14h10v7H7z"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 7v5l3 2"/></symbol>
 </svg>
 
@@ -524,6 +525,7 @@ function renderList() {
           <div class="r-meta"><span><b>${brl.format(+r.preco)}</b></span>${r.porcao ? `<span>${esc(r.porcao)}</span>` : ""}${macrosHTML(r)}</div>
         </div>
         <div class="r-act">
+          <button class="btn ghost small" data-dup="${esc(r.id)}">${icon("copy")}Duplicar</button>
           <button class="btn ghost small" data-edit="${esc(r.id)}">${icon("pen")}Editar</button>
           <button class="btn ghost small" data-del="${esc(r.id)}">${icon("trash")}Excluir</button>
           <label class="switch"><input type="checkbox" data-vis="${esc(r.id)}" ${r.ativo ? "checked" : ""}><span class="track"></span>Visível no site</label>
@@ -554,8 +556,8 @@ function renderTrash() {
 async function purge(ids) {
   const list = rows.filter(r => ids.includes(r.id));
   await api(`dayse?id=in.(${ids.map(i => `"${i.replace(/"/g, "")}"`).join(",")})`, { method: "DELETE" });
-  list.forEach(r => removeStored(r.foto_url));
   rows = rows.filter(r => !ids.includes(r.id));
+  list.forEach(r => removeStored(r.foto_url));
 }
 
 /* ---------- categorias ---------- */
@@ -658,6 +660,7 @@ document.addEventListener("click", async e => {
   const d = t.dataset;
   if (d.view) show(d.view);
   else if (d.edit) openEdit(rows.find(r => r.id === d.edit));
+  else if (d.dup) openEdit(rows.find(r => r.id === d.dup), true);
   else if (t.id === "new") openEdit(null);
   else if (d.del) {
     t.disabled = true;
@@ -703,11 +706,12 @@ document.addEventListener("change", async e => {
 
 /* ---------- edição ---------- */
 let photo = { file: null, url: null, preview: null };
-function openEdit(r) {
-  editing = r;
+// dup: abre o cadastro preenchido com os dados de r, mas salva como um item novo.
+function openEdit(r, dup) {
+  editing = dup ? null : r;
   const isItem = (r ? r.tipo : view) === "item";
-  $("e-title").textContent = r ? `Editar ${r.nome}` : (isItem ? "Novo item do cardápio" : "Novo ingrediente");
-  $("e-nome").value = r?.nome || "";
+  $("e-title").textContent = dup ? `Duplicar ${r.nome}` : r ? `Editar ${r.nome}` : (isItem ? "Novo item do cardápio" : "Novo ingrediente");
+  $("e-nome").value = dup ? `${r.nome} (cópia)` : r?.nome || "";
   const cl = catList(isItem ? "item" : "ingrediente");
   if (r && !cl.some(c => c.id === r.categoria)) cl.push({ id: r.categoria, nome: cap(r.categoria) });
   $("e-cat").innerHTML = cl.map(c => `<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join("");
@@ -765,6 +769,7 @@ async function uploadPhoto(id, blob) {
 function removeStored(url) {
   const pre = `${SUPABASE_URL}/storage/v1/object/public/dayse-fotos/`;
   if (!url || !url.startsWith(pre) || !session) return;
+  if (rows.some(r => r.foto_url === url)) return; // uma cópia ainda usa a mesma foto
   fetch(`${SUPABASE_URL}/storage/v1/object/dayse-fotos/${url.slice(pre.length)}`, { method: "DELETE",
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${session.token}` } }).catch(() => {});
 }
