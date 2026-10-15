@@ -215,6 +215,9 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 .photo-btns { display: flex; gap: 8px; flex-wrap: wrap }
 .file-btn { position: relative; overflow: hidden }
 .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer }
+.l-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px }
+.l-filter .t-filter { margin-bottom: 0 }
+.cat-sheet { max-width: 420px }
 .t-filter { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px }
 .t-filter button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13.5px; cursor: pointer }
 .t-filter button span { color: var(--muted); font-weight: 600; margin-left: 4px }
@@ -252,7 +255,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <h1>Fit <span>&amp;</span> Massa</h1>
     <nav class="nav" id="nav" hidden aria-label="Seções">
       <button data-view="pedidos" aria-current="true"><svg class="i"><use href="#i-ticket"/></svg>Pedidos <span id="ped-count">(0)</span></button>
-      <button data-view="item" aria-current="false">Pratos</button>
+      <button data-view="item" aria-current="false">Cardápio</button>
       <button data-view="ingrediente" aria-current="false">Ingredientes</button>
       <button data-view="horario" aria-current="false"><svg class="i"><use href="#i-clock"/></svg>Prazo de entrega e Horários<span class="state" id="state" hidden></span></button>
     </nav>
@@ -282,12 +285,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
   <section id="v-list" hidden>
     <div class="bar">
-      <h2 id="list-title">Pratos</h2>
+      <h2 id="list-title">Cardápio</h2>
       <div class="tools">
         <button class="btn small" id="new"><svg class="i"><use href="#i-plus"/></svg>Adicionar</button>
         <button class="btn ghost small" id="trash-btn"><svg class="i"><use href="#i-trash"/></svg>Lixeira <span class="badge zero" id="trash-count">0</span></button>
       </div>
     </div>
+    <div class="l-filter"><div class="t-filter" id="l-filter" role="group" aria-label="Filtrar por categoria"></div>
+      <button type="button" class="btn ghost small" id="cat-add"><svg class="i"><use href="#i-plus"/></svg>Adicionar categoria</button></div>
     <div id="list"><p class="empty">Carregando…</p></div>
   </section>
 
@@ -327,7 +332,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
           <div class="photo-btns"><span class="btn ghost small file-btn"><span id="e-file-l">Escolher foto</span><input type="file" id="e-file" accept="image/jpeg,image/png,image/webp" aria-label="Escolher foto"></span>
           <button type="button" class="btn ghost small" id="e-nofoto">Remover foto</button></div></div></div>
       <div class="field s6"><label for="e-nome">Nome</label><input id="e-nome" required></div>
-      <div class="field s3"><label for="e-cat">Categoria</label><input id="e-cat" list="cats" required></div>
+      <div class="field s3"><label for="e-cat">Categoria</label><select id="e-cat" required></select></div>
       <div class="field s3" id="e-porcao-f"><label for="e-porcao">Porção</label><input id="e-porcao" placeholder="ex.: 100 g ou 2 fatias"></div>
       <div class="field s3" id="e-qtd-f"><label for="e-qtd">Peso ou volume</label><div class="unit"><input id="e-qtd" type="number" min="0" step="1" inputmode="numeric" placeholder="ex.: 350"><select id="e-un" aria-label="Unidade"><option value="g">g</option><option value="ml">ml</option></select></div></div>
       <div class="field s6" id="e-desc-f"><label for="e-desc">Descrição</label><textarea id="e-desc"></textarea></div>
@@ -338,7 +343,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       <div class="field s2"><label for="e-g"><span class="dot" style="--c: var(--m-fat)"></span>Gordura (g)</label><input id="e-g" type="number" step="0.1" min="0" inputmode="decimal"></div>
       <div class="field s2"><label for="e-c"><span class="dot" style="--c: var(--m-carb)"></span>Carboidrato (g)</label><input id="e-c" type="number" step="0.1" min="0" inputmode="decimal"></div>
     </div>
-    <datalist id="cats"></datalist>
     <p class="msg err" id="e-msg"></p>
     <div class="sheet-foot">
       <button type="button" class="btn ghost" id="e-cancel">Cancelar</button>
@@ -356,6 +360,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <div class="sheet-foot" id="t-foot"></div>
   </div>
 </div>
+<div class="overlay" id="cv" hidden>
+  <form class="sheet cat-sheet" id="cat-form" novalidate role="dialog" aria-modal="true" aria-labelledby="c-title">
+    <h2 id="c-title">Adicionar categoria</h2>
+    <div class="field"><label for="c-nome">Nome da categoria</label><input id="c-nome" required maxlength="40" placeholder="ex.: Sobremesas"></div>
+    <p class="msg err" id="c-msg"></p>
+    <div class="sheet-foot">
+      <button type="button" class="btn ghost" id="c-cancel">Cancelar</button>
+      <button class="btn" id="c-save">Salvar</button>
+    </div>
+  </form>
+</div>
 <div class="zoom" id="zoom" hidden role="dialog" aria-modal="true" aria-label="Comanda ampliada">
   <button type="button" class="zoom-x" id="zoom-x" aria-label="Fechar">×</button>
   <div class="zoom-in" id="zoom-in"></div>
@@ -368,7 +383,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 const SUPABASE_URL = "https://wkhfpujnynwflcimngjg.supabase.co";
 const SUPABASE_KEY = "sb_publishable_KJAWjztbbgQqlC6IYCYS4g_eeuVSd1z";
 const EMAIL_DOMAIN = "fitemassa.app";
-const ITEM_CATS = ["pratos", "lanches", "sucos"];
+const DEFAULT_CATS = [{ tipo: "item", id: "pratos", nome: "Pratos", ordem: 0 }, { tipo: "item", id: "lanches", nome: "Lanches", ordem: 1 }, { tipo: "item", id: "sucos", nome: "Sucos", ordem: 2 }];
 const DAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const DEFAULT_HOURS = [0, 1, 2, 3, 4, 5, 6].map(d => ({ aberto: d !== 1, abre: "10:00", fecha: "02:30" }));
@@ -376,7 +391,7 @@ const $ = id => document.getElementById(id);
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const icon = n => `<svg class="i" aria-hidden="true"><use href="#i-${n}"/></svg>`;
-let session = null, rows = [], orders = [], seenOrders = null, view = "pedidos", editing = null, trashConfirm = null, tFilter = "todos", config = null, hours = null;
+let session = null, rows = [], orders = [], seenOrders = null, view = "pedidos", editing = null, trashConfirm = null, tFilter = "todos", lFilter = "todas", categorias = DEFAULT_CATS, config = null, hours = null;
 
 try { session = JSON.parse(sessionStorage.getItem("fm-admin")); } catch (e) {}
 const keep = () => { try { session ? sessionStorage.setItem("fm-admin", JSON.stringify(session)) : sessionStorage.removeItem("fm-admin"); } catch (e) {} };
@@ -428,8 +443,9 @@ async function start() {
   $("login").hidden = true; $("nav").hidden = false; $("logout").hidden = false;
   show(view);
   try {
-    const [r, c] = await Promise.all([api("dayse?select=*&order=ordem,nome"), api("dayse_config?id=eq.1&select=*")]);
-    rows = r || []; config = c && c[0] ? c[0] : { modo: "programado", aberto_manual: false, horarios: DEFAULT_HOURS };
+    const [r, c, k] = await Promise.all([api("dayse?select=*&order=ordem,nome"), api("dayse_config?id=eq.1&select=*"),
+      api("dayse_categorias?select=*&order=ordem,nome").catch(() => null)]);
+    rows = r || []; if (Array.isArray(k) && k.length) categorias = k; config = c && c[0] ? c[0] : { modo: "programado", aberto_manual: false, horarios: DEFAULT_HOURS };
     if (!Array.isArray(config.horarios) || config.horarios.length !== 7) config.horarios = DEFAULT_HOURS;
     hours = JSON.parse(JSON.stringify(config.horarios));
     renderList(); renderHours(); renderPrazo(); renderState();
@@ -437,10 +453,11 @@ async function start() {
   } catch (e) { $("list").innerHTML = `<p class="empty">Não foi possível carregar: ${esc(e.message)}</p>`; }
 }
 function show(v) {
+  if (v !== view) lFilter = "todas";
   view = v;
   document.querySelectorAll("#nav button").forEach(b => b.setAttribute("aria-current", b.dataset.view === v));
   $("v-list").hidden = v !== "item" && v !== "ingrediente"; $("v-hours").hidden = v !== "horario"; $("v-orders").hidden = v !== "pedidos";
-  $("list-title").textContent = v === "item" ? "Pratos" : "Ingredientes";
+  $("list-title").textContent = v === "item" ? "Cardápio" : "Ingredientes";
   renderList(); if (v === "pedidos") renderOrders();
   document.body.classList.toggle("wide", v === "pedidos");
 }
@@ -455,18 +472,28 @@ const macrosHTML = r => `<span><span class="dot" style="--c: var(--m-prot)"></sp
   <span><span class="dot" style="--c: var(--m-fat)"></span><b>${+r.gordura} g</b> gord</span>
   <span><span class="dot" style="--c: var(--m-carb)"></span><b>${+r.carboidrato} g</b> carbo</span>`;
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+// Categorias do tipo (cardápio ou ingrediente), na ordem do banco, mais as que só existem nos itens.
+function catList(tipo) {
+  const list = categorias.filter(c => c.tipo === tipo).sort((a, b) => a.ordem - b.ordem).map(c => ({ id: c.id, nome: c.nome }));
+  live().filter(r => r.tipo === tipo && !list.some(c => c.id === r.categoria)).forEach(r => {
+    if (!list.some(c => c.id === r.categoria)) list.push({ id: r.categoria, nome: cap(r.categoria) }); });
+  return list;
+}
+const catName = (tipo, id) => (catList(tipo).find(c => c.id === id) || { nome: cap(id || "") }).nome;
 
 function renderList() {
   const n = trashed().length;
   $("trash-count").textContent = n; $("trash-count").className = n ? "badge" : "badge zero";
   if ((view !== "item" && view !== "ingrediente") || !config) return;
-  const list = live().filter(r => r.tipo === view);
-  const cats = [...new Set(list.map(r => r.categoria))];
-  const groups = view === "item" ? ITEM_CATS.concat(cats.filter(c => !ITEM_CATS.includes(c))) : cats;
-  if (!list.length) { $("list").innerHTML = `<p class="empty">Nada cadastrado ainda. Toque em “Adicionar”.</p>`; return; }
+  const all = live().filter(r => r.tipo === view), groups = catList(view);
+  if (lFilter !== "todas" && !groups.some(c => c.id === lFilter)) lFilter = "todas";
+  $("l-filter").innerHTML = [{ id: "todas", nome: "Todas" }].concat(groups).map(c =>
+    `<button type="button" data-lfilter="${esc(c.id)}" aria-pressed="${lFilter === c.id}">${esc(c.nome)}<span>${c.id === "todas" ? all.length : all.filter(r => r.categoria === c.id).length}</span></button>`).join("");
+  const list = lFilter === "todas" ? all : all.filter(r => r.categoria === lFilter);
+  if (!list.length) { $("list").innerHTML = `<p class="empty">${lFilter === "todas" ? "Nada cadastrado ainda." : "Nada nesta categoria ainda."} Toque em “Adicionar”.</p>`; return; }
   $("list").innerHTML = groups.map(g => {
-    const items = list.filter(r => r.categoria === g); if (!items.length) return "";
-    return `<div class="group"><h3>${esc(cap(g))}</h3>${items.map(r => `
+    const items = list.filter(r => r.categoria === g.id); if (!items.length) return "";
+    return `<div class="group"><h3>${esc(g.nome)}</h3>${items.map(r => `
       <div class="row${r.ativo ? "" : " off"}${r.tipo === "item" ? "" : " nothumb"}">
         ${r.tipo === "item" ? thumbHTML(r) : ""}
         <div>
@@ -483,7 +510,7 @@ function renderList() {
 }
 
 /* ---------- lixeira ---------- */
-const T_FILTERS = [["todos", "Todos"], ["item", "Pratos"], ["ingrediente", "Ingredientes"]];
+const T_FILTERS = [["todos", "Todos"], ["item", "Cardápio"], ["ingrediente", "Ingredientes"]];
 const trashShown = () => trashed().filter(r => tFilter === "todos" || r.tipo === tFilter);
 function renderTrash() {
   const all = trashed(), list = trashShown();
@@ -508,6 +535,31 @@ async function purge(ids) {
   rows = rows.filter(r => !ids.includes(r.id));
 }
 
+/* ---------- categorias ---------- */
+function openCat() {
+  $("c-title").textContent = view === "item" ? "Adicionar categoria ao cardápio" : "Adicionar categoria de ingredientes";
+  $("c-nome").value = ""; $("c-msg").textContent = "";
+  $("cv").hidden = false; document.body.style.overflow = "hidden"; $("c-nome").focus();
+}
+function closeCat() { $("cv").hidden = true; document.body.style.overflow = ""; }
+$("cv").addEventListener("click", e => { if (e.target.id === "cv") closeCat(); });
+$("cat-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const nome = $("c-nome").value.trim().replace(/\s+/g, " "), tipo = view;
+  if (!nome) { $("c-msg").textContent = "Escreva o nome da categoria."; return; }
+  const id = tipo === "item" ? slug(nome) : nome;
+  if (!id) { $("c-msg").textContent = "Use letras ou números no nome."; return; }
+  if (catList(tipo).some(c => c.id === id || c.nome.toLowerCase() === nome.toLowerCase())) { $("c-msg").textContent = "Essa categoria já existe."; return; }
+  const ordem = Math.max(-1, ...categorias.filter(c => c.tipo === tipo).map(c => c.ordem)) + 1;
+  $("c-save").disabled = true;
+  try {
+    const [row] = await api("dayse_categorias", { method: "POST", body: JSON.stringify({ tipo, id, nome: tipo === "item" ? cap(nome) : nome, ordem }) });
+    categorias = categorias.concat(row); lFilter = row.id; closeCat(); renderList();
+    toast(`Categoria ${row.nome} criada. Ela aparece no site quando tiver itens.`);
+  } catch (err) { $("c-msg").textContent = "Não foi possível salvar: " + err.message; }
+  finally { $("c-save").disabled = false; }
+});
+
 /* ---------- cliques ---------- */
 document.addEventListener("click", async e => {
   const t = e.target.closest("button"); if (!t) return;
@@ -528,6 +580,9 @@ document.addEventListener("click", async e => {
     try { const row = await patchRow(d.restore, { excluido_em: null }); renderTrash(); renderList(); toast(`${row.nome} restaurado`); }
     catch (err) { t.disabled = false; toast("Não foi possível restaurar: " + err.message); }
   }
+  else if (d.lfilter) { lFilter = d.lfilter; renderList(); }
+  else if (t.id === "cat-add") openCat();
+  else if (t.id === "c-cancel") closeCat();
   else if (d.tfilter) { tFilter = d.tfilter; trashConfirm = null; renderTrash(); }
   else if (d.purge) { trashConfirm = d.purge; renderTrash(); }
   else if (d.purgeYes) {
@@ -558,9 +613,12 @@ let photo = { file: null, url: null, preview: null };
 function openEdit(r) {
   editing = r;
   const isItem = (r ? r.tipo : view) === "item";
-  $("e-title").textContent = r ? `Editar ${r.nome}` : (isItem ? "Novo prato" : "Novo ingrediente");
+  $("e-title").textContent = r ? `Editar ${r.nome}` : (isItem ? "Novo item do cardápio" : "Novo ingrediente");
   $("e-nome").value = r?.nome || "";
-  $("e-cat").value = r?.categoria || (isItem ? "pratos" : "");
+  const cl = catList(isItem ? "item" : "ingrediente");
+  if (r && !cl.some(c => c.id === r.categoria)) cl.push({ id: r.categoria, nome: cap(r.categoria) });
+  $("e-cat").innerHTML = cl.map(c => `<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join("");
+  $("e-cat").value = r?.categoria || (lFilter !== "todas" ? lFilter : (cl[0] || {}).id || "");
   $("e-porcao").value = r?.porcao || "";
   const m = (r?.porcao || "").match(/^\s*([\d.,]+)\s*(g|ml)\b/i);
   $("e-qtd").value = m ? m[1].replace(",", ".") : "";
@@ -572,8 +630,6 @@ function openEdit(r) {
   $("e-ordem").value = r ? r.ordem : (Math.max(0, ...rows.map(x => x.ordem)) + 1);
   $("e-ativo").checked = r ? r.ativo : true;
   $("e-p").value = r ? +r.proteina : 0; $("e-g").value = r ? +r.gordura : 0; $("e-c").value = r ? +r.carboidrato : 0;
-  const cats = isItem ? ITEM_CATS : [...new Set(rows.filter(x => x.tipo === "ingrediente").map(x => x.categoria))];
-  $("cats").innerHTML = cats.map(c => `<option value="${esc(c)}">`).join("");
   photo = { file: null, url: r?.foto_url || null, preview: r?.foto_url || null }; $("e-file").value = ""; showPhoto();
   $("e-msg").className = "msg err"; $("e-msg").textContent = "";
   $("ov").hidden = false; document.body.style.overflow = "hidden"; $("e-nome").focus();
@@ -582,7 +638,7 @@ function closeEdit() { $("ov").hidden = true; document.body.style.overflow = "";
 $("ov").addEventListener("click", e => { if (e.target.id === "ov") closeEdit(); });
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
-  if (!$("ov").hidden) closeEdit(); else if (!$("tv").hidden) closeTrash();
+  if (!$("cv").hidden) closeCat(); else if (!$("ov").hidden) closeEdit(); else if (!$("tv").hidden) closeTrash();
 });
 function showPhoto() {
   const t = $("e-thumb");
@@ -625,7 +681,6 @@ $("edit").addEventListener("submit", async e => {
   const isItem = (editing ? editing.tipo : view) === "item";
   const nome = $("e-nome").value.trim(), cat = $("e-cat").value.trim(), preco = parseFloat($("e-preco").value);
   if (!nome || !cat || !(preco >= 0)) { $("e-msg").textContent = "Preencha nome, categoria e preço."; return; }
-  if (isItem && !ITEM_CATS.includes(cat)) { $("e-msg").textContent = "Para pratos, a categoria precisa ser pratos, lanches ou sucos."; return; }
   const num = id => Math.max(0, parseFloat($(id).value) || 0);
   const data = { nome, categoria: cat, descricao: isItem ? ($("e-desc").value.trim() || null) : null,
     porcao: isItem ? ($("e-qtd").value ? `${+$("e-qtd").value} ${$("e-un").value}` : null) : ($("e-porcao").value.trim() || null),

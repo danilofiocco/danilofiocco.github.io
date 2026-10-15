@@ -437,10 +437,12 @@ function dishHTML(d) { return `
       </div>
       <button class="add" data-add="${d.id}" id="add-${d.id}">Adicionar</button>
     </article>`; }
+// Só as categorias com pratos aparecem.
+const shownCats = () => CATEGORIES.filter(c => DISHES.some(d => d.cat === c.id));
 function renderMenu() {
-  document.getElementById("cats").innerHTML = CATEGORIES.map(c =>
+  document.getElementById("cats").innerHTML = shownCats().map(c =>
     `<button class="cat" data-cat="${c.id}">${c.name}<span class="n">${DISHES.filter(d => d.cat === c.id).length}</span></button>`).join("");
-  document.getElementById("menu").innerHTML = CATEGORIES.map(c => `
+  document.getElementById("menu").innerHTML = shownCats().map(c => `
     <section class="category" id="cat-${c.id}" aria-labelledby="h-${c.id}">
       <h2 id="h-${c.id}">${c.name}</h2>
       <div class="menu">${DISHES.filter(d => d.cat === c.id).map(dishHTML).join("")}</div>
@@ -448,9 +450,10 @@ function renderMenu() {
 }
 function markCategory() {
   const line = (document.getElementById("stick").getBoundingClientRect().bottom || 0) + 20;
-  let current = CATEGORIES[0].id;
-  CATEGORIES.forEach(c => { if (document.getElementById("cat-" + c.id).getBoundingClientRect().top <= line) current = c.id; });
-  if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) current = CATEGORIES[CATEGORIES.length - 1].id;
+  const cats = shownCats(); if (!cats.length) return;
+  let current = cats[0].id;
+  cats.forEach(c => { if (document.getElementById("cat-" + c.id).getBoundingClientRect().top <= line) current = c.id; });
+  if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) current = cats[cats.length - 1].id;
   document.querySelectorAll(".cat").forEach(b => b.setAttribute("aria-current", b.dataset.cat === current));
 }
 addEventListener("scroll", markCategory, { passive: true });
@@ -735,6 +738,8 @@ async function loadFromSupabase() {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/dayse?select=*&order=ordem`, { headers: { apikey: SUPABASE_KEY } });
     if (!r.ok) throw new Error("HTTP " + r.status);
     const rows = await r.json();
+    const k = await fetch(`${SUPABASE_URL}/rest/v1/dayse_categorias?select=*&order=ordem`, { headers: { apikey: SUPABASE_KEY } }).then(x => x.ok ? x.json() : []).catch(() => []);
+    const kItem = k.filter(c => c.tipo === "item"), kIng = k.filter(c => c.tipo === "ingrediente").map(c => c.id);
     const mac = x => [+x.proteina, +x.gordura, +x.carboidrato];
     const items = rows.filter(x => x.tipo === "item").map(x => ({ id: x.id, cat: x.categoria, name: x.nome, desc: x.descricao || "", price: +x.preco, weight: x.porcao || "", foto: x.foto_url || "", macros: mac(x) }));
     const groups = [];
@@ -743,6 +748,10 @@ async function loadFromSupabase() {
       if (!g) groups.push(g = { group: x.categoria, items: [] });
       g.items.push([x.id, x.nome, x.porcao || "", +x.preco, mac(x)]);
     });
+    if (kItem.length) CATEGORIES.splice(0, CATEGORIES.length, ...kItem.map(c => ({ id: c.id, name: c.nome })));
+    items.forEach(d => { if (!CATEGORIES.some(c => c.id === d.cat)) CATEGORIES.push({ id: d.cat, name: d.cat.charAt(0).toUpperCase() + d.cat.slice(1) }); });
+    const gi = g => { const i = kIng.indexOf(g.group); return i < 0 ? 999 : i; };
+    groups.sort((a, b) => gi(a) - gi(b));
     if (items.length) DISHES.splice(0, DISHES.length, ...items);
     if (groups.length) {
       INGREDIENTS.splice(0, INGREDIENTS.length, ...groups);
