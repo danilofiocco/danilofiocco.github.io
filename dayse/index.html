@@ -179,6 +179,8 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 .b-group h3 { font-family: var(--display); font-weight: 400; font-size: 16px; margin: 14px 0 4px; color: var(--muted) }
 .b-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding-block: 8px; border-bottom: 1px solid var(--line) }
 .b-row { padding-inline: 10px; margin-inline: -10px; border-radius: 10px; transition: background .2s }
+.b-main { display: flex; align-items: center; gap: 10px; min-width: 0 }
+.plate.b-thumb { width: 44px; height: 44px; flex: none }
 .b-row.on { background: var(--hl); border-bottom-color: transparent }
 .b-row.on .b-name { color: var(--accent) }
 .b-name { font-weight: 700; font-size: 15px }
@@ -383,7 +385,7 @@ const INGREDIENTS = [
     ["picles", "Picles", "30 g", 1.5, [0, 0, 1]] ] }
 ];
 const ING = {};
-INGREDIENTS.forEach(g => g.items.forEach(([id, name, portion, price, macros]) => ING[id] = { id, name, portion, price, macros }));
+INGREDIENTS.forEach(g => g.items.forEach(([id, name, portion, price, macros, foto]) => ING[id] = { id, name, portion, price, macros, foto: foto || "" }));
 const PKEY = "fit-massa-meus-pratos";
 let plates = {};
 try { plates = JSON.parse(localStorage.getItem(PKEY)) || {}; } catch (e) { plates = {}; }
@@ -606,7 +608,7 @@ function renderBuilderList() {
   document.getElementById("b-list").innerHTML = groups.map((g, gi) => `
     <div class="b-group" data-bg="${gi}">${g.group ? `<h3>${g.group}</h3>` : ""}${g.ids.map(id => { const it = ING[id]; return `
       <div class="b-row" id="br-${id}">
-        <span class="b-name">${it.name}<span class="b-sub">${brl.format(it.price)} · ${it.portion} · ${macroText(it.macros)}</span></span>
+        <span class="b-main">${it.foto ? `<span class="plate has-photo b-thumb"><img src="${it.foto}" alt="${it.name}" loading="lazy"></span>` : ""}<span class="b-name">${it.name}<span class="b-sub">${brl.format(it.price)} · ${it.portion} · ${macroText(it.macros)}</span></span></span>
         <span class="qty">
           <button type="button" data-bdec="${id}" aria-label="Diminuir ${it.name}">−</button>
           <input type="number" value="0" readonly tabindex="-1" id="bq-${id}" aria-label="Porções de ${it.name}">
@@ -749,7 +751,7 @@ async function loadFromSupabase() {
     rows.filter(x => x.tipo === "ingrediente").forEach(x => {
       let g = groups.find(g => g.group === x.categoria);
       if (!g) groups.push(g = { group: x.categoria, items: [] });
-      g.items.push([x.id, x.nome, x.porcao || "", +x.preco, mac(x)]);
+      g.items.push([x.id, x.nome, x.porcao || "", +x.preco, mac(x), x.foto_url || ""]);
     });
     if (kItem.length) CATEGORIES.splice(0, CATEGORIES.length, ...kItem.map(c => ({ id: c.id, name: c.nome })));
     items.forEach(d => { if (!CATEGORIES.some(c => c.id === d.cat)) CATEGORIES.push({ id: d.cat, name: d.cat.charAt(0).toUpperCase() + d.cat.slice(1) }); });
@@ -759,7 +761,7 @@ async function loadFromSupabase() {
     if (groups.length) {
       INGREDIENTS.splice(0, INGREDIENTS.length, ...groups);
       Object.keys(ING).forEach(k => delete ING[k]);
-      INGREDIENTS.forEach(g => g.items.forEach(([id, name, portion, price, macros]) => ING[id] = { id, name, portion, price, macros }));
+      INGREDIENTS.forEach(g => g.items.forEach(([id, name, portion, price, macros, foto]) => ING[id] = { id, name, portion, price, macros, foto: foto || "" }));
     }
     renderMenu(); render(); measureStick(); markCategory();
   } catch (e) { console.warn("Cardápio: não foi possível ler o Supabase, usando os dados embutidos.", e); }

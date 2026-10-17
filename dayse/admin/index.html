@@ -533,9 +533,9 @@ function renderList() {
   $("list").innerHTML = groups.map(g => {
     const items = list.filter(r => r.categoria === g.id); if (!items.length) return "";
     return `<div class="group" data-group="${esc(g.id)}"><h3>${esc(g.nome)}</h3>${items.map(r => `
-      <div class="row${r.ativo ? "" : " off"}${r.tipo === "item" ? "" : " nothumb"}" data-row="${esc(r.id)}">
+      <div class="row${r.ativo ? "" : " off"}" data-row="${esc(r.id)}">
         <button type="button" class="r-grip" aria-label="Arrastar ${esc(r.nome)} para reordenar" title="Arraste para reordenar">${icon("drag")}</button>
-        ${r.tipo === "item" ? thumbHTML(r) : ""}
+        ${thumbHTML(r)}
         <div>
           <div class="r-name">${esc(r.nome)} ${r.ativo ? "" : `<span class="chip">Oculto</span>`}</div>
           <div class="r-meta"><span><b>${brl.format(+r.preco)}</b></span>${r.porcao ? `<span>${esc(r.porcao)}</span>` : ""}${macrosHTML(r)}</div>
@@ -793,7 +793,7 @@ function openEdit(r, dup) {
   $("e-qtd").value = m ? m[1].replace(",", ".") : "";
   $("e-un").value = m ? m[2].toLowerCase() : (r?.categoria === "sucos" ? "ml" : "g");
   $("e-porcao-f").hidden = isItem; $("e-qtd-f").hidden = !isItem;
-  $("e-desc-f").hidden = !isItem; $("e-foto-f").hidden = !isItem;
+  $("e-desc-f").hidden = !isItem; $("e-foto-f").hidden = false;
   $("e-desc").value = r?.descricao || "";
   $("e-preco").value = r ? +r.preco : "";
   $("e-ordem").value = r ? r.ordem : (Math.max(0, ...rows.map(x => x.ordem)) + 1);
@@ -859,12 +859,11 @@ $("edit").addEventListener("submit", async e => {
   try {
     const id = editing ? editing.id : (() => { let x = slug(nome) || "item"; if (rows.some(r => r.id === x)) x += "-" + Date.now().toString(36).slice(-4); return x; })();
     const oldUrl = editing?.foto_url || null;
-    if (!isItem) {}
-    else if (photo.file) { $("e-msg").className = "msg"; $("e-msg").textContent = "Enviando foto…"; data.foto_url = await uploadPhoto(id, photo.file); }
+    if (photo.file) { $("e-msg").className = "msg"; $("e-msg").textContent = "Enviando foto…"; data.foto_url = await uploadPhoto(id, photo.file); }
     else data.foto_url = photo.url;
     if (editing) await patchRow(id, data);
     else { const [row] = await api("dayse", { method: "POST", body: JSON.stringify({ id, tipo: isItem ? "item" : "ingrediente", ...data }) }); rows.push(row); }
-    if (isItem && oldUrl && oldUrl !== data.foto_url) removeStored(oldUrl);
+    if (oldUrl && oldUrl !== data.foto_url) removeStored(oldUrl);
     rows.sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome));
     closeEdit(); renderList(); toast(`${nome} salvo`);
   } catch (err) { $("e-msg").className = "msg err"; $("e-msg").textContent = "Não foi possível salvar: " + err.message; }
