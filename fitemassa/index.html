@@ -310,7 +310,6 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
     <div class="b-sort" id="b-cats" role="group" aria-label="Filtrar por categoria"></div>
     <div class="b-list" id="b-list"></div>
     <div class="b-foot">
-      <span class="macros" id="b-macros"></span>
       <div class="b-total"><span id="b-count">Nenhum ingrediente</span><strong id="b-price">R$&nbsp;0,00</strong></div>
       <button type="button" class="b-add" id="b-add" disabled>Adicionar prato ao carrinho</button>
     </div>
@@ -468,24 +467,13 @@ function setQty(id, q) {
   save(); render();
 }
 
-const MACROS = [["proteína", "--m-prot", "prot"], ["gordura", "--m-fat", "gord"], ["carbo", "--m-carb", "carbo"]];
-function macroBar(m) {
-  const total = m.reduce((a, b) => a + b, 0) || 1;
-  return `<span class="mbar" aria-hidden="true">${m.map((g, i) => `<i style="flex: ${g / total}; background: var(${MACROS[i][1]})"></i>`).join("")}</span>
-    <span class="mlegend" aria-hidden="true">${m.map((g, i) => `<span style="--c: var(${MACROS[i][1]})"><b>${g} g</b> ${MACROS[i][0]}</span>`).join("")}</span>`;
-}
-function macroText(m) {
-  const top = Math.max(...m);
-  return m.map((g, i) => top > 0 && g === top
-    ? `<b class="mtop" style="--c: var(${MACROS[i][1]})">${g} g ${MACROS[i][2]}</b>` : `${g} g ${MACROS[i][2]}`).join(" · ");
-}
 function dishHTML(d) { return `
     <article class="dish">
       ${d.foto ? `<div class="plate has-photo"><img src="${d.foto}" alt="${d.name}" loading="lazy"></div>` : `<div class="plate" aria-hidden="true">${d.name[0]}</div>`}
       <div>
         <h3>${d.name}</h3>
         <p>${d.desc}</p>
-        <div class="meta"><span class="price">${brl.format(d.price)}</span>${d.weight ? `<span class="weight">${d.weight}</span>` : ""}<span class="macros" role="img" aria-label="Por porção: ${d.macros[0]} gramas de proteína, ${d.macros[1]} de gordura e ${d.macros[2]} de carboidratos">${macroBar(d.macros)}</span></div>
+        <div class="meta"><span class="price">${brl.format(d.price)}</span>${d.weight ? `<span class="weight">${d.weight}</span>` : ""}</div>
       </div>
       <button class="add" data-add="${d.id}">Adicionar</button>
     </article>`; }
@@ -499,7 +487,7 @@ function featHTML(d) { return `
       <div class="feat-body">
         <h3>${d.name}</h3>
         ${d.desc ? `<p>${d.desc}</p>` : ""}
-        <div class="meta"><span class="price">${brl.format(d.price)}</span>${d.weight ? `<span class="weight">${d.weight}</span>` : ""}<span class="macros" role="img" aria-label="Por porção: ${d.macros[0]} gramas de proteína, ${d.macros[1]} de gordura e ${d.macros[2]} de carboidratos">${macroBar(d.macros)}</span></div>
+        <div class="meta"><span class="price">${brl.format(d.price)}</span>${d.weight ? `<span class="weight">${d.weight}</span>` : ""}</div>
       </div>
       <button class="add" data-add="${d.id}">Adicionar</button>
     </article>`; }
@@ -748,7 +736,7 @@ function renderBuilderList() {
   document.getElementById("b-list").innerHTML = groups.map((g, gi) => `
     <div class="b-group" data-bg="${gi}">${g.group ? `<h3>${g.group}</h3>` : ""}${g.ids.map(id => { const it = ING[id]; return `
       <div class="b-row" id="br-${id}">
-        <span class="b-main">${it.foto ? `<span class="plate has-photo b-thumb"><img src="${it.foto}" alt="${it.name}" loading="lazy"></span>` : ""}<span class="b-name">${it.name}<span class="b-sub">${brl.format(it.price)} · ${it.portion} · ${macroText(it.macros)}</span></span></span>
+        <span class="b-main">${it.foto ? `<span class="plate has-photo b-thumb"><img src="${it.foto}" alt="${it.name}" loading="lazy"></span>` : ""}<span class="b-name">${it.name}<span class="b-sub">${brl.format(it.price)} · ${it.portion}</span></span></span>
         <span class="qty">
           <button type="button" data-bdec="${id}" aria-label="Diminuir ${it.name}">−</button>
           <input type="number" value="0" readonly tabindex="-1" id="bq-${id}" aria-label="Porções de ${it.name}">
@@ -779,9 +767,6 @@ function renderBuilder() {
   });
   const st = plateStats(building);
   const portions = st.ids.reduce((s, i) => s + building[i], 0);
-  document.getElementById("b-macros").innerHTML = macroBar(st.ids.length ? st.macros : [1, 1, 1]).replace(/<b>1 g<\/b>/g, "<b>0 g</b>");
-  document.getElementById("b-macros").style.opacity = st.ids.length ? 1 : .35;
-  document.getElementById("b-macros").setAttribute("aria-label", `${st.macros[0]} gramas de proteína, ${st.macros[1]} de gordura e ${st.macros[2]} de carboidratos`);
   document.getElementById("b-price").textContent = brl.format(st.price);
   document.getElementById("b-count").textContent = !portions ? "Nenhum ingrediente" : `${st.ids.length} ${st.ids.length === 1 ? "ingrediente" : "ingredientes"} · ${portions} ${portions === 1 ? "porção" : "porções"}`;
   document.getElementById("b-add").disabled = !st.ids.length || closed;
