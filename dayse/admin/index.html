@@ -227,7 +227,8 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 .photo-btns { display: flex; gap: 8px; flex-wrap: wrap }
 .file-btn { position: relative; overflow: hidden }
 .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer }
-.feat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px 14px; margin-bottom: 14px }
+.feat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px 14px; margin-bottom: 14px; position: sticky; top: 8px; z-index: 30; transition: box-shadow .2s }
+.feat.stuck { box-shadow: 0 8px 22px rgba(0,0,0,.14) }
 .feat-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 10px }
 .feat-head h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 19px }
 .feat-head h3::first-letter { color: var(--brand-gold) }
@@ -242,7 +243,8 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 .feat-slot .f-x { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; display: grid; place-items: center }
 .feat-slot .f-x:hover { color: var(--ink) }
 .feat-slot .f-n { position: absolute; top: 4px; left: 8px; font-size: 11px; color: var(--muted) }
-@media (max-width: 560px) { .feat-slots { grid-template-columns: 1fr } .feat-slot { min-height: 60px } }
+@media (max-width: 560px) { .feat { padding: 8px 10px 10px } .feat-head .msg { display: none } .feat-head { margin-bottom: 6px } .feat-slots { gap: 6px }
+  .feat-slot { min-height: 54px; padding: 6px 8px; font-size: 11.5px } .feat-slot .thumb, .feat-slot .f-price, .feat-slot .f-n { display: none } .feat-slot .f-name { font-size: 12.5px; padding-right: 18px } .feat-slot .f-x { width: 22px; height: 22px; font-size: 14px } }
 .l-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px }
 .l-filter .t-filter { margin-bottom: 0 }
 .cw { display: inline-flex }
@@ -541,6 +543,8 @@ const catName = (tipo, id) => (catList(tipo).find(c => c.id === id) || { nome: c
 
 // Destaques: 3 espaços com ids de pratos, guardados em dayse_config.destaques.
 const featIds = () => { const a = Array.isArray(config?.destaques) ? config.destaques.slice(0, 3) : []; while (a.length < 3) a.push(null); return a; };
+// Sombra quando a área de destaques está grudada no topo.
+addEventListener("scroll", () => { const f = $("feat"); if (!f.hidden) f.classList.toggle("stuck", f.getBoundingClientRect().top <= 8.5 && scrollY > 0); }, { passive: true });
 function renderFeat() {
   $("feat").hidden = view !== "item" || !config;
   if ($("feat").hidden) return;
