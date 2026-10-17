@@ -345,6 +345,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   <section id="v-config" hidden>
     <div class="bar"><h2>Configurações</h2></div>
     <div class="prazo">
+      <div><h3>WhatsApp do restaurante</h3><p class="msg">Número com DDD. Vai no botão de WhatsApp do topo do site.</p></div>
+      <div class="prazo-in">
+        <input class="pix-in" id="wa-num" type="tel" inputmode="tel" maxlength="20" placeholder="(11) 91234-5678" aria-label="WhatsApp do restaurante" autocomplete="off">
+        <button class="btn" id="save-wa">Salvar número</button>
+      </div>
+    </div>
+    <div class="prazo">
       <div><h3>Chave Pix</h3><p class="msg">Vai na mensagem de WhatsApp enviada ao cliente: “Efetue o pagamento via Pix para …”.</p></div>
       <div class="prazo-in">
         <input class="pix-in" id="pix" maxlength="100" placeholder="e-mail, telefone, CPF/CNPJ ou chave aleatória" aria-label="Chave Pix" autocomplete="off">
@@ -1051,7 +1058,15 @@ function renderPrazo() {
   $("pz-m").innerHTML = Array.from({ length: 12 }, (_, i) => i * 5).map(x => `<option value="${x}">${String(x).padStart(2, "0")}</option>`).join("");
   $("pz-h").value = Math.min(5, Math.floor(m / 60)); $("pz-m").value = Math.round(m % 60 / 5) * 5 % 60;
   $("pix").value = pixKey();
+  $("wa-num").value = config.whatsapp || "";
 }
+$("save-wa").addEventListener("click", async e => {
+  const b = e.currentTarget, n = $("wa-num").value.trim();
+  if (n.replace(/\D/g, "").length < 8) { toast("Digite o número com DDD."); return; }
+  b.disabled = true;
+  try { await saveConfig({ whatsapp: n }, "Número do WhatsApp salvo"); }
+  catch (err) { toast("Não foi possível salvar: " + err.message); } finally { b.disabled = false; }
+});
 const pixKey = () => (config && config.pix_chave) || "teste@teste.com";
 $("save-pix").addEventListener("click", async e => {
   const b = e.currentTarget, k = $("pix").value.trim();
