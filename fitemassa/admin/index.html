@@ -185,6 +185,7 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 .tk-items { list-style: none; margin: 0; padding: 0 0 8px; border-bottom: 1.5px dashed var(--tk-mut) }
 .tk-items li { display: flex; justify-content: space-between; gap: 8px; padding-block: 2px }
 .tk-items small { display: block; color: var(--tk-mut); font-size: 12px }
+.tk-items small.tk-obs { color: var(--tk-ink, inherit); font-weight: 700; font-style: italic }
 .tk-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 14.5px; padding-block: 8px; border-bottom: 1.5px dashed var(--tk-mut) }
 .tk-addr { font-size: 12.5px; color: var(--tk-mut); padding-top: 8px }
 .tk-move { margin-top: 10px; width: 100%; font: inherit; font-family: var(--body); font-size: 12.5px; font-weight: 800; border: 1.5px solid var(--tk-ink); background: transparent; color: var(--tk-ink); border-radius: 8px; padding: 6px; cursor: pointer }
@@ -217,6 +218,16 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 @media (max-width: 480px) { .s3 { grid-column: span 6 } }
 .check { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px }
 .sheet-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; flex-wrap: wrap }
+.cells { display: flex; flex-direction: column; gap: 6px }
+.cell { display: flex; gap: 6px; align-items: center }
+.cell input { flex: 1; min-width: 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font: inherit }
+.cell input.v { flex: 0 0 110px }
+.cell .cx { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; font-size: 17px; line-height: 1 }
+.cell .cx:hover { color: var(--ink) }
+.cell.new input { border-style: dashed; background: transparent }
+.cell-new { margin-top: 6px; width: 100%; text-align: left; padding: 9px 12px; border: 1px dashed var(--line); border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer }
+.cell-new:hover { border-color: var(--brand-gold); color: var(--ink) }
+.flabel small, label small { font-weight: 500; color: var(--muted) }
 .macros-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 12px; align-items: end }
 .macros-row #e-sug { height: 42px; white-space: nowrap }
 @media (max-width: 480px) { .macros-row { grid-template-columns: repeat(3, minmax(0, 1fr)) } .macros-row #e-sug { grid-column: 1 / -1 } }
@@ -400,6 +411,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       <div class="field s3" id="e-porcao-f"><label for="e-porcao">Porção</label><input id="e-porcao" placeholder="ex.: 100 g ou 2 fatias"></div>
       <div class="field s3" id="e-qtd-f"><label for="e-qtd">Peso ou volume</label><div class="unit"><input id="e-qtd" type="number" min="0" step="1" inputmode="numeric" placeholder="ex.: 350"><select id="e-un" aria-label="Unidade"><option value="g">g</option><option value="ml">ml</option></select></div></div>
       <div class="field s6" id="e-desc-f"><label for="e-desc">Descrição</label><textarea id="e-desc"></textarea></div>
+      <div class="field s6" id="e-opts-f"><span class="flabel">Opções <small>o cliente escolhe uma ao pedir</small></span><div class="cells" id="e-opts"></div></div>
+      <div class="field s6" id="e-adds-f"><span class="flabel">Adicionais <small>o cliente escolhe a quantidade</small></span><div class="cells" id="e-adds"></div>
+        <button type="button" class="cell-new" id="e-add-new">+ adicional</button></div>
       <div class="field s2"><label for="e-preco">Preço (R$)</label><input id="e-preco" type="number" step="0.01" min="0" inputmode="decimal" required></div>
       <div class="field s2"><label for="e-ordem">Ordem</label><input id="e-ordem" type="number" step="1"></div>
       <div class="field s2" style="justify-content: flex-end"><label class="check"><input type="checkbox" id="e-ativo"> Visível no site</label></div>
@@ -860,6 +874,8 @@ function openEdit(r, dup) {
   $("e-un").value = m ? m[2].toLowerCase() : (r?.categoria === "sucos" ? "ml" : "g");
   $("e-porcao-f").hidden = isItem; $("e-qtd-f").hidden = !isItem;
   $("e-desc-f").hidden = !isItem; $("e-foto-f").hidden = false;
+  $("e-opts-f").hidden = !isItem; $("e-adds-f").hidden = !isItem;
+  renderOpts(Array.isArray(r?.opcoes) ? r.opcoes : []); renderAdds(Array.isArray(r?.adicionais) ? r.adicionais : []);
   $("e-desc").value = r?.descricao || "";
   $("e-preco").value = r ? +r.preco : "";
   $("e-ordem").value = r ? r.ordem : (Math.max(0, ...rows.map(x => x.ordem)) + 1);
@@ -920,6 +936,7 @@ $("edit").addEventListener("submit", async e => {
   const num = id => Math.max(0, parseFloat($(id).value) || 0);
   const data = { nome, categoria: cat, descricao: isItem ? ($("e-desc").value.trim() || null) : null,
     porcao: isItem ? ($("e-qtd").value ? `${+$("e-qtd").value} ${$("e-un").value}` : null) : ($("e-porcao").value.trim() || null),
+    ...(isItem ? { opcoes: readOpts(), adicionais: readAdds() } : {}),
     preco, ordem: parseInt($("e-ordem").value, 10) || 0, ativo: $("e-ativo").checked, proteina: num("e-p"), gordura: num("e-g"), carboidrato: num("e-c") };
   $("e-save").disabled = true;
   try {
@@ -935,6 +952,34 @@ $("edit").addEventListener("submit", async e => {
   } catch (err) { $("e-msg").className = "msg err"; $("e-msg").textContent = "Não foi possível salvar: " + err.message; }
   finally { $("e-save").disabled = false; }
 });
+
+/* ---------- opções e adicionais ---------- */
+// Opções: sempre há uma célula "+ opção" vazia no fim; escrever nela cria a opção e abre outra embaixo.
+function optCell(v) {
+  const el = document.createElement("div"); el.className = v === null ? "cell new" : "cell";
+  el.innerHTML = `<input value="${esc(v || "")}" maxlength="60" placeholder="+ opção" aria-label="Opção">${v === null ? "" : `<button type="button" class="cx" aria-label="Remover opção">×</button>`}`;
+  return el;
+}
+function renderOpts(list) { const box = $("e-opts"); box.innerHTML = ""; list.forEach(v => box.appendChild(optCell(v))); box.appendChild(optCell(null)); }
+$("e-opts").addEventListener("input", e => {
+  const cell = e.target.closest(".cell"); if (!cell || !cell.classList.contains("new") || !e.target.value.trim()) return;
+  cell.classList.remove("new"); cell.insertAdjacentHTML("beforeend", `<button type="button" class="cx" aria-label="Remover opção">×</button>`);
+  $("e-opts").appendChild(optCell(null));
+});
+$("e-opts").addEventListener("click", e => { if (e.target.classList.contains("cx")) e.target.closest(".cell").remove(); });
+// Adicionais: "+ adicional" cria uma linha com Nome e Valor.
+function addCell(a) {
+  const el = document.createElement("div"); el.className = "cell";
+  el.innerHTML = `<input class="n" value="${esc(a?.nome || "")}" maxlength="60" placeholder="Nome" aria-label="Nome do adicional">
+    <input class="v" type="number" step="0.01" min="0" inputmode="decimal" value="${a ? +a.valor || 0 : ""}" placeholder="Valor (R$)" aria-label="Valor do adicional">
+    <button type="button" class="cx" aria-label="Remover adicional">×</button>`;
+  $("e-adds").appendChild(el); return el;
+}
+function renderAdds(list) { $("e-adds").innerHTML = ""; list.forEach(addCell); }
+$("e-add-new").addEventListener("click", () => addCell(null).querySelector("input").focus());
+$("e-adds").addEventListener("click", e => { if (e.target.classList.contains("cx")) e.target.closest(".cell").remove(); });
+const readOpts = () => [...$("e-opts").querySelectorAll("input")].map(i => i.value.trim()).filter(Boolean);
+const readAdds = () => [...$("e-adds").querySelectorAll(".cell")].map(c => ({ nome: c.querySelector(".n").value.trim(), valor: Math.max(0, parseFloat(c.querySelector(".v").value) || 0) })).filter(a => a.nome);
 
 /* ---------- sugerir macros ---------- */
 // Tabela por 100 g (proteína, gordura, carboidrato), valores aproximados da TACO para o alimento pronto.
@@ -1157,6 +1202,12 @@ function waLink(num, o) {
   if (d.length <= 11) d = "55" + d;
   return `<a class="tk-wa" href="https://wa.me/${d}?text=${encodeURIComponent(orderText(o))}" target="_blank" rel="noopener"><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm5.8 14.1c-.24.68-1.4 1.3-1.94 1.35-.5.05-1.12.07-1.8-.11-.42-.13-.95-.31-1.63-.6-2.87-1.24-4.74-4.13-4.88-4.32-.14-.19-1.17-1.55-1.17-2.96s.74-2.1 1-2.39c.26-.28.57-.35.76-.35h.55c.18 0 .42-.07.65.5.24.57.81 1.98.88 2.12.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.17-.3.37-.43.5-.14.14-.29.3-.12.58.17.28.74 1.22 1.59 1.97 1.09.97 2.01 1.27 2.29 1.41.28.14.45.12.62-.07.17-.19.71-.83.9-1.12.19-.28.38-.24.64-.14.26.09 1.66.78 1.94.92.28.14.47.21.54.33.07.12.07.68-.17 1.36z"/></svg>${esc(num)}</a>`;
 }
+// Detalhes do item na comanda: opção, adicionais e comentário em linhas separadas.
+const detalheHTML = i => {
+  if (!i.detalhe) return "";
+  const lines = (i.opcao || i.adicionais || i.obs) ? i.detalhe.split(" · ") : [i.detalhe];
+  return lines.map(l => `<small${/^Obs\.:/.test(l) ? ' class="tk-obs"' : ""}>${esc(l)}</small>`).join("");
+};
 function ticketHTML(o, fresh) {
   const e = o.entrega || {}, addr = [[e.rua, e.numero].filter(Boolean).join(", "), e.complemento, e.bairro, e.cidade].filter(Boolean).join(" · ");
   const done = o.status === "concluido";
@@ -1165,7 +1216,7 @@ function ticketHTML(o, fresh) {
     <div class="tk-head"><svg class="tk-grip" aria-hidden="true"><use href="#i-grip"/></svg><b>#${o.id}</b><time datetime="${esc(o.criado_em)}">${hhmm(o.criado_em)}</time></div>
     <div class="tk-name">${esc(o.nome)}</div>
     ${waLink(e.whatsapp, o)}
-    <ul class="tk-items">${(o.itens || []).map(i => `<li><span>${+i.qtd}x ${esc(i.nome)}${i.detalhe ? `<small>${esc(i.detalhe)}</small>` : ""}</span><span>${brl.format(i.qtd * i.preco)}</span></li>`).join("")}</ul>
+    <ul class="tk-items">${(o.itens || []).map(i => `<li><span>${+i.qtd}x ${esc(i.nome)}${detalheHTML(i)}</span><span>${brl.format(i.qtd * i.preco)}</span></li>`).join("")}</ul>
     <div class="tk-total"><span>TOTAL</span><span>${brl.format(+o.total)}</span></div>
     ${addr || e.referencia || e.cep ? `<div class="tk-addr">${esc(addr)}${e.cep ? `<br>CEP ${esc(e.cep)}` : ""}${e.referencia ? `<br>Ref.: ${esc(e.referencia)}` : ""}</div>` : ""}
     ${NEXT[o.status] ? `<button type="button" class="tk-move" data-move="${o.id}">Mover para ${NEXT[o.status][1]} →</button>` : ""}
@@ -1209,7 +1260,7 @@ function labelHTML(o) {
     <p class="to">${esc(o.nome)}</p>${e.whatsapp ? `<p>WhatsApp: ${esc(e.whatsapp)}</p>` : ""}
     <p>${esc([[e.rua, e.numero].filter(Boolean).join(", "), e.complemento].filter(Boolean).join(" - "))}</p>
     <p>${esc([e.bairro, e.cidade].filter(Boolean).join(" · "))}${e.cep ? ` · CEP ${esc(e.cep)}` : ""}</p>
-    <ul>${(o.itens || []).map(i => `<li><span>${+i.qtd}x ${esc(i.nome)}${i.detalhe ? `<small>${esc(i.detalhe)}</small>` : ""}</span><span>${brl.format(i.qtd * i.preco)}</span></li>`).join("")}</ul>
+    <ul>${(o.itens || []).map(i => `<li><span>${+i.qtd}x ${esc(i.nome)}${detalheHTML(i)}</span><span>${brl.format(i.qtd * i.preco)}</span></li>`).join("")}</ul>
     <p class="tot"><span>TOTAL</span><span>${brl.format(+o.total)}</span></p></section>`;
 }
 $("print-btn").addEventListener("click", () => {

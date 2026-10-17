@@ -200,6 +200,12 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 .b-sub { display: block; font-size: 12.5px; color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums }
 .b-foot { border-top: 1px solid var(--line); padding: 14px 22px calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 10px; background: var(--surface) }
 .b-foot .macros { max-width: none }
+.d-sec h3 { font-family: var(--display); font-weight: 400; font-size: 17px; margin: 16px 0 6px }
+.d-sec h3 small { font-family: var(--sans, inherit); font-size: 12px; color: var(--muted); margin-left: 6px }
+.d-opt { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; cursor: pointer; font-size: 15px }
+.d-opt:has(input:checked) { border-color: var(--accent); background: var(--hl) }
+.d-opt input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0 }
+.d-obs { width: 100%; min-height: 70px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); font: inherit; resize: vertical; margin-bottom: 12px }
 .b-total { display: flex; justify-content: space-between; align-items: baseline; font-variant-numeric: tabular-nums }
 .b-total strong { font-size: 22px; font-weight: 800 }
 .b-total span { font-size: 13px; color: var(--muted) }
@@ -279,6 +285,21 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
   </div>
 </div>
 
+<div class="overlay" id="d-overlay" hidden>
+  <div class="sheet builder dish-sheet" role="dialog" aria-modal="true" aria-labelledby="d-title">
+    <div class="sheet-head">
+      <h2 id="d-title">Prato</h2>
+      <button type="button" class="back" id="d-close">Fechar</button>
+    </div>
+    <p class="b-intro" id="d-desc"></p>
+    <div class="b-list" id="d-list"></div>
+    <div class="b-foot">
+      <div class="b-total"><span id="d-base"></span><strong id="d-price">R$&nbsp;0,00</strong></div>
+      <p class="form-msg err" id="d-msg"></p>
+      <button type="button" class="b-add" id="d-add">Adicionar ao carrinho</button>
+    </div>
+  </div>
+</div>
 <div class="overlay" id="b-overlay" hidden>
   <div class="sheet builder" role="dialog" aria-modal="true" aria-labelledby="b-title">
     <div class="sheet-head">
@@ -366,6 +387,7 @@ const DISHES = [
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const KEY = "cardapio-dayse-carrinho";
 let cart = {};
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 let closed = false; // restaurante fechado: o cardápio continua visível, mas não dá para adicionar
 try { cart = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { cart = {}; }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(cart)); } catch (e) {} };
@@ -421,11 +443,28 @@ function plateItem(id) {
 }
 const ingText = (d, i) => `${d.ings[i] > 1 ? d.ings[i] + "x " : ""}${ING[i].name}`;
 const plateDetail = d => d.ids.map(i => ingText(d, i)).join(", ");
-const byId = id => DISHES.find(d => d.id === id) || plateItem(id);
+// Pratos com opções/adicionais/comentário escolhidos no pop-up: cada combinação vira uma linha no carrinho.
+const CKEY = "fit-massa-escolhas";
+let configs = {};
+try { configs = JSON.parse(localStorage.getItem(CKEY)) || {}; } catch (e) { configs = {}; }
+const saveConfigs = () => { try { localStorage.setItem(CKEY, JSON.stringify(configs)); } catch (e) {} };
+Object.keys(configs).forEach(id => { if (!cart[id]) delete configs[id]; });
+function configItem(id) {
+  const c = configs[id]; if (!c) return null;
+  const d = DISHES.find(x => x.id === c.dish); if (!d) return null;
+  const adds = (c.adds || []).filter(a => a.qtd > 0);
+  const price = Math.round((d.price + adds.reduce((s, a) => s + a.valor * a.qtd, 0)) * 100) / 100;
+  const parts = [];
+  if (c.opcao) parts.push(c.opcao);
+  if (adds.length) parts.push(adds.map(a => `${a.qtd > 1 ? a.qtd + "x " : "+ "}${a.nome}`).join(", "));
+  if (c.obs) parts.push(`Obs.: ${c.obs}`);
+  return { ...d, id, cfg: true, dish: d.id, opcao: c.opcao || "", adds, obs: c.obs || "", price, detail: parts.join(" · ") };
+}
+const byId = id => DISHES.find(d => d.id === id) || plateItem(id) || configItem(id);
 
 function setQty(id, q) {
   q = Math.max(0, Math.min(99, Math.floor(Number(q) || 0)));
-  if (q === 0) { delete cart[id]; if (plates[id]) { delete plates[id]; savePlates(); } } else cart[id] = q;
+  if (q === 0) { delete cart[id]; if (plates[id]) { delete plates[id]; savePlates(); } if (configs[id]) { delete configs[id]; saveConfigs(); } } else cart[id] = q;
   save(); render();
 }
 
@@ -503,7 +542,7 @@ function render() {
   document.getElementById("lines").innerHTML = ids.map(id => {
     const d = byId(id), q = cart[id];
     return `<li class="line">
-      <span class="line-name">${d.name}${d.custom ? `<span class="mine">${d.ids.slice(0, 3).map(i => ingText(d, i)).join(", ")}${d.ids.length > 3 ? ` e mais ${d.ids.length - 3}. <button class="link" data-ings="${id}">Ver todos</button>` : ""}</span>` : ""}</span>
+      <span class="line-name">${d.name}${d.cfg && d.detail ? `<span class="mine">${esc(d.detail)}</span>` : ""}${d.custom ? `<span class="mine">${d.ids.slice(0, 3).map(i => ingText(d, i)).join(", ")}${d.ids.length > 3 ? ` e mais ${d.ids.length - 3}. <button class="link" data-ings="${id}">Ver todos</button>` : ""}</span>` : ""}</span>
       <span class="line-total">${brl.format(d.price * q)}</span>
       <span class="qty">
         <button data-dec="${id}" aria-label="Diminuir ${d.name}">−</button>
@@ -514,7 +553,7 @@ function render() {
     </li>`;
   }).join("");
   DISHES.forEach(d => {
-    const q = cart[d.id] || 0;
+    const q = (cart[d.id] || 0) + Object.keys(configs).reduce((n, id) => n + (configs[id].dish === d.id ? cart[id] || 0 : 0), 0);
     document.querySelectorAll(`[data-add="${d.id}"]`).forEach(b => {
       b.classList.toggle("in", q > 0 && !closed);
       b.disabled = closed;
@@ -577,7 +616,15 @@ document.addEventListener("click", e => {
   else if (t.dataset.cat) {
     document.getElementById("cat-" + t.dataset.cat).scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   }
-  else if (t.dataset.add && !closed) { flash(t.closest(".dish")); fly(t.closest(".dish").querySelector(".plate")); setQty(t.dataset.add, (cart[t.dataset.add] || 0) + 1); }
+  else if (t.dataset.add && !closed) {
+    const d = DISHES.find(x => x.id === t.dataset.add);
+    if (d && ((d.opcoes || []).length || (d.adicionais || []).length)) openDish(d, t.closest(".dish"));
+    else { flash(t.closest(".dish")); fly(t.closest(".dish").querySelector(".plate")); setQty(t.dataset.add, (cart[t.dataset.add] || 0) + 1); }
+  }
+  else if (t.id === "d-close") closeOverlay("d-overlay");
+  else if (t.dataset.dinc !== undefined) { const i = +t.dataset.dinc; dishSel.adds[i] = Math.min(9, (dishSel.adds[i] || 0) + 1); renderDish(); }
+  else if (t.dataset.ddec !== undefined) { const i = +t.dataset.ddec; dishSel.adds[i] = Math.max(0, (dishSel.adds[i] || 0) - 1); renderDish(); }
+  else if (t.id === "d-add") addDish();
   else if (t.dataset.inc) setQty(t.dataset.inc, cart[t.dataset.inc] + 1);
   else if (t.dataset.dec) setQty(t.dataset.dec, cart[t.dataset.dec] - 1);
   else if (t.dataset.rm) setQty(t.dataset.rm, 0);
@@ -599,7 +646,9 @@ async function saveOrder() {
   const entrega = {}; ["whatsapp", "rua", "numero", "complemento", "bairro", "cidade", "cep"].forEach(n => { if (val(n)) entrega[n] = val(n); });
   const order = {
     nome: val("nome"), entrega,
-    itens: lines.map(l => ({ nome: l.d.name, qtd: l.q, preco: l.d.price, ...(l.d.custom ? { detalhe: plateDetail(l.d) } : {}) })),
+    itens: lines.map(l => ({ nome: l.d.name, qtd: l.q, preco: l.d.price, ...(l.d.custom ? { detalhe: plateDetail(l.d) } : {}),
+      ...(l.d.cfg ? { ...(l.d.detail ? { detalhe: l.d.detail } : {}), ...(l.d.opcao ? { opcao: l.d.opcao } : {}),
+        ...(l.d.adds.length ? { adicionais: l.d.adds.map(a => ({ nome: a.nome, qtd: a.qtd, valor: a.valor })) } : {}), ...(l.d.obs ? { obs: l.d.obs } : {}) } : {}) })),
     pratos: lines.reduce((n, l) => n + l.q, 0),
     total: Math.round(lines.reduce((s, l) => s + l.q * l.d.price, 0) * 100) / 100
   };
@@ -612,7 +661,7 @@ function openForm() {
   if (!lines.length) return;
   const total = lines.reduce((s, l) => s + l.q * l.d.price, 0);
   document.getElementById("recap").innerHTML = lines.map(l =>
-    `<li><span>${l.q}x ${l.d.name}${l.d.custom ? `<span class="mine">${plateDetail(l.d)}</span>` : ""}</span><span>${brl.format(l.q * l.d.price)}</span></li>`).join("") +
+    `<li><span>${l.q}x ${l.d.name}${l.d.custom ? `<span class="mine">${plateDetail(l.d)}</span>` : l.d.cfg && l.d.detail ? `<span class="mine">${esc(l.d.detail)}</span>` : ""}</span><span>${brl.format(l.q * l.d.price)}</span></li>`).join("") +
     `<li class="sum"><span>Total</span><span>${brl.format(total)}</span></li>`;
   const msg = document.getElementById("form-msg");
   msg.className = "form-msg"; msg.textContent = "";
@@ -626,6 +675,64 @@ function openOverlay(id) { document.getElementById(id).hidden = false; document.
 function closeOverlay(id) {
   document.getElementById(id).hidden = true;
   if ([...document.querySelectorAll(".overlay")].every(o => o.hidden)) document.body.style.overflow = "";
+}
+// Pop-up do prato: opção (obrigatória quando houver), adicionais com quantidade e comentário.
+let dishSel = null;
+function openDish(d, card) {
+  dishSel = { d, card, opcao: "", adds: {}, obs: "" };
+  document.getElementById("d-title").textContent = d.name;
+  document.getElementById("d-desc").textContent = d.desc || "";
+  const opts = d.opcoes || [], adds = d.adicionais || [];
+  document.getElementById("d-list").innerHTML = `
+    ${opts.length ? `<div class="d-sec"><h3>Escolha uma opção<small>obrigatório</small></h3>${opts.map((o, i) => `
+      <label class="d-opt"><input type="radio" name="d-opt" value="${i}"> ${esc(o)}</label>`).join("")}</div>` : ""}
+    ${adds.length ? `<div class="d-sec"><h3>Adicionais</h3>${adds.map((a, i) => `
+      <div class="b-row" id="dr-${i}">
+        <span class="b-name">${esc(a.nome)}<span class="b-sub">+ ${brl.format(+a.valor || 0)}</span></span>
+        <span class="qty">
+          <button type="button" data-ddec="${i}" aria-label="Menos ${esc(a.nome)}">−</button>
+          <input type="number" value="0" readonly tabindex="-1" id="dq-${i}" aria-label="Quantidade de ${esc(a.nome)}">
+          <button type="button" data-dinc="${i}" aria-label="Mais ${esc(a.nome)}">+</button>
+        </span>
+      </div>`).join("")}</div>` : ""}
+    <div class="d-sec"><h3>Comentários</h3><textarea class="d-obs" id="d-obs" maxlength="300" placeholder="Ex.: sem cebola, molho à parte…"></textarea></div>`;
+  document.getElementById("d-msg").textContent = "";
+  renderDish();
+  openOverlay("d-overlay");
+  document.getElementById("d-list").scrollTop = 0;
+  document.getElementById("d-close").focus();
+}
+function dishPrice() {
+  const { d, adds } = dishSel;
+  return d.price + (d.adicionais || []).reduce((s, a, i) => s + (+a.valor || 0) * (adds[i] || 0), 0);
+}
+function renderDish() {
+  const { d, adds } = dishSel;
+  (d.adicionais || []).forEach((a, i) => {
+    document.getElementById("dq-" + i).value = adds[i] || 0;
+    document.getElementById("dr-" + i).classList.toggle("on", (adds[i] || 0) > 0);
+  });
+  document.getElementById("d-base").textContent = `Prato ${brl.format(d.price)}`;
+  document.getElementById("d-price").textContent = brl.format(dishPrice());
+  document.getElementById("d-add").textContent = closed ? "Fechado" : `Adicionar · ${brl.format(dishPrice())}`;
+  document.getElementById("d-add").disabled = closed;
+}
+document.getElementById("d-list").addEventListener("change", e => {
+  if (e.target.name === "d-opt") { dishSel.opcao = (dishSel.d.opcoes || [])[+e.target.value] || ""; document.getElementById("d-msg").textContent = ""; }
+});
+function addDish() {
+  const { d, card } = dishSel;
+  if ((d.opcoes || []).length && !dishSel.opcao) { document.getElementById("d-msg").textContent = "Escolha uma opção para continuar."; return; }
+  const cfg = { dish: d.id, opcao: dishSel.opcao,
+    adds: (d.adicionais || []).map((a, i) => ({ nome: a.nome, valor: +a.valor || 0, qtd: dishSel.adds[i] || 0 })).filter(a => a.qtd > 0),
+    obs: document.getElementById("d-obs").value.trim() };
+  // A mesma combinação soma na linha que já existe.
+  const key = JSON.stringify(cfg);
+  let id = Object.keys(configs).find(k => JSON.stringify(configs[k]) === key);
+  if (!id) { id = "c-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); configs[id] = cfg; saveConfigs(); }
+  closeOverlay("d-overlay");
+  if (card) { flash(card); fly(card.querySelector(".plate")); }
+  setQty(id, (cart[id] || 0) + 1);
 }
 function openBuilder() {
   building = {};
@@ -735,9 +842,10 @@ document.addEventListener("keydown", e => {
   if (!document.getElementById("done-overlay").hidden) closeOverlay("done-overlay");
   else if (!document.getElementById("i-overlay").hidden) closeOverlay("i-overlay");
   else if (!document.getElementById("b-overlay").hidden) closeOverlay("b-overlay");
+  else if (!document.getElementById("d-overlay").hidden) closeOverlay("d-overlay");
   else if (!overlay.hidden) closeForm();
 });
-["b-overlay", "i-overlay", "done-overlay"].forEach(id => document.getElementById(id).addEventListener("click", e => { if (e.target.id === id) closeOverlay(id); }));
+["b-overlay", "i-overlay", "done-overlay", "d-overlay"].forEach(id => document.getElementById(id).addEventListener("click", e => { if (e.target.id === id) closeOverlay(id); }));
 document.getElementById("send").addEventListener("click", async e => {
   const msg = document.getElementById("form-msg");
   if (!form.checkValidity()) {
@@ -779,7 +887,8 @@ async function loadFromSupabase() {
     const k = await fetch(`${SUPABASE_URL}/rest/v1/dayse_categorias?select=*&order=ordem`, { headers: { apikey: SUPABASE_KEY } }).then(x => x.ok ? x.json() : []).catch(() => []);
     const kItem = k.filter(c => c.tipo === "item"), kIng = k.filter(c => c.tipo === "ingrediente").map(c => c.id);
     const mac = x => [+x.proteina, +x.gordura, +x.carboidrato];
-    const items = rows.filter(x => x.tipo === "item").map(x => ({ id: x.id, cat: x.categoria, name: x.nome, desc: x.descricao || "", price: +x.preco, weight: x.porcao || "", foto: x.foto_url || "", macros: mac(x) }));
+    const items = rows.filter(x => x.tipo === "item").map(x => ({ id: x.id, cat: x.categoria, name: x.nome, desc: x.descricao || "", price: +x.preco, weight: x.porcao || "", foto: x.foto_url || "", macros: mac(x),
+      opcoes: Array.isArray(x.opcoes) ? x.opcoes.filter(Boolean) : [], adicionais: Array.isArray(x.adicionais) ? x.adicionais.filter(a => a && a.nome) : [] }));
     const groups = [];
     rows.filter(x => x.tipo === "ingrediente").forEach(x => {
       let g = groups.find(g => g.group === x.categoria);
