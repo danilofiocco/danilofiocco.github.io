@@ -549,7 +549,7 @@ async function start() {
   try {
     const [r, c, k] = await Promise.all([api("dayse?select=*&order=ordem,nome"), api("dayse_config?id=eq.1&select=*"),
       api("dayse_categorias?select=*&order=ordem,nome").catch(() => null)]);
-    rows = r || []; if (Array.isArray(k) && k.length) categorias = k; config = c && c[0] ? c[0] : { modo: "programado", aberto_manual: false, horarios: DEFAULT_HOURS };
+    rows = (r || []).sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome)); if (Array.isArray(k) && k.length) categorias = k; config = c && c[0] ? c[0] : { modo: "programado", aberto_manual: false, horarios: DEFAULT_HOURS };
     if (!Array.isArray(config.horarios) || config.horarios.length !== 7) config.horarios = DEFAULT_HOURS;
     hours = JSON.parse(JSON.stringify(config.horarios));
     renderList(); renderHours(); renderPrazo(); renderState();
@@ -898,7 +898,7 @@ function openEdit(r, dup) {
   renderOpts(Array.isArray(r?.opcoes) ? r.opcoes : []); renderAdds(Array.isArray(r?.adicionais) ? r.adicionais : []);
   $("e-desc").value = r?.descricao || "";
   $("e-preco").value = r ? +r.preco : "";
-  $("e-ordem").value = r ? r.ordem : (Math.max(0, ...rows.map(x => x.ordem)) + 1);
+  $("e-ordem").value = r && !dup ? r.ordem : (Math.max(0, ...rows.map(x => x.ordem)) + 1);
   $("e-ativo").checked = r ? r.ativo : true;
   $("e-p").value = r ? +r.proteina : 0; $("e-g").value = r ? +r.gordura : 0; $("e-c").value = r ? +r.carboidrato : 0;
   photo = { file: null, url: r?.foto_url || null, preview: r?.foto_url || null }; $("e-file").value = ""; showPhoto();

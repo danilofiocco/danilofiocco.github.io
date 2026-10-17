@@ -868,7 +868,8 @@ async function loadFromSupabase() {
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/dayse?select=*&order=ordem`, { headers: { apikey: SUPABASE_KEY } });
     if (!r.ok) throw new Error("HTTP " + r.status);
-    const rows = await r.json();
+    // Mesma ordem do admin: número de ordem e, no empate, nome.
+    const rows = (await r.json()).sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome));
     const k = await fetch(`${SUPABASE_URL}/rest/v1/dayse_categorias?select=*&order=ordem`, { headers: { apikey: SUPABASE_KEY } }).then(x => x.ok ? x.json() : []).catch(() => []);
     const kItem = k.filter(c => c.tipo === "item"), kIng = k.filter(c => c.tipo === "ingrediente").map(c => c.id);
     const mac = x => [+x.proteina, +x.gordura, +x.carboidrato];
