@@ -125,6 +125,14 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 }
 @media (prefers-reduced-motion: reduce) { .handle svg { transition: none } }
 .dish { position: relative; isolation: isolate }
+.featured h2::before { content: "★ "; color: var(--warm) }
+.feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-top: 10px }
+.dish.feat-card { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 0; border: 2px solid var(--warm); border-radius: 16px; overflow: hidden; background: var(--surface) }
+.plate.feat-photo { width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 0; border: 0; font-size: 44px }
+.plate.feat-photo img { border-radius: 0 }
+.feat-body { padding: 12px 14px 4px; flex: 1 }
+.feat-card .add { margin: 8px 14px 14px; align-self: flex-start }
+@media (max-width: 480px) { .feat-grid { grid-template-columns: 1fr } .dish.feat-card .add { grid-column: auto } }
 .dish.flash::before { content: ""; position: absolute; inset: 0 -10px; border-radius: 12px; background: var(--hl); z-index: -1; animation: flash 1.4s ease-out forwards }
 @keyframes flash { 0%, 15% { opacity: 1 } 100% { opacity: 0 } }
 .flyer { position: fixed; z-index: 50; margin: 0; pointer-events: none; border-style: solid; border-color: var(--accent); box-shadow: 0 6px 18px rgba(0,0,0,.2) }
@@ -431,17 +439,32 @@ function dishHTML(d) { return `
         <p>${d.desc}</p>
         <div class="meta"><span class="price">${brl.format(d.price)}</span>${d.weight ? `<span class="weight">${d.weight}</span>` : ""}<span class="macros" role="img" aria-label="Por porção: ${d.macros[0]} gramas de proteína, ${d.macros[1]} de gordura e ${d.macros[2]} de carboidratos">${macroBar(d.macros)}</span></div>
       </div>
-      <button class="add" data-add="${d.id}" id="add-${d.id}">Adicionar</button>
+      <button class="add" data-add="${d.id}">Adicionar</button>
     </article>`; }
-// Só as categorias com pratos aparecem.
-const shownCats = () => CATEGORIES.filter(c => DISHES.some(d => d.cat === c.id));
+// Destaques: até 3 pratos escolhidos no admin (dayse_config.destaques), mostrados antes das categorias.
+let FEATURED = [];
+const featuredDishes = () => FEATURED.map(id => DISHES.find(d => d.id === id)).filter(Boolean);
+// Cartão de destaque: foto grande em cima, texto e botão embaixo.
+function featHTML(d) { return `
+    <article class="dish feat-card">
+      ${d.foto ? `<div class="plate has-photo feat-photo"><img src="${d.foto}" alt="${d.name}" loading="lazy"></div>` : `<div class="plate feat-photo" aria-hidden="true">${d.name[0]}</div>`}
+      <div class="feat-body">
+        <h3>${d.name}</h3>
+        ${d.desc ? `<p>${d.desc}</p>` : ""}
+        <div class="meta"><span class="price">${brl.format(d.price)}</span>${d.weight ? `<span class="weight">${d.weight}</span>` : ""}<span class="macros" role="img" aria-label="Por porção: ${d.macros[0]} gramas de proteína, ${d.macros[1]} de gordura e ${d.macros[2]} de carboidratos">${macroBar(d.macros)}</span></div>
+      </div>
+      <button class="add" data-add="${d.id}">Adicionar</button>
+    </article>`; }
+// Só as categorias com pratos aparecem; "Destaques" vem primeiro quando houver.
+const shownCats = () => (featuredDishes().length ? [{ id: "destaques", name: "Destaques" }] : []).concat(CATEGORIES.filter(c => DISHES.some(d => d.cat === c.id)));
+const catDishes = id => id === "destaques" ? featuredDishes() : DISHES.filter(d => d.cat === id);
 function renderMenu() {
   document.getElementById("cats").innerHTML = shownCats().map(c =>
-    `<button class="cat" data-cat="${c.id}">${c.name}<span class="n">${DISHES.filter(d => d.cat === c.id).length}</span></button>`).join("");
+    `<button class="cat" data-cat="${c.id}">${c.name}<span class="n">${catDishes(c.id).length}</span></button>`).join("");
   document.getElementById("menu").innerHTML = shownCats().map(c => `
-    <section class="category" id="cat-${c.id}" aria-labelledby="h-${c.id}">
+    <section class="category${c.id === "destaques" ? " featured" : ""}" id="cat-${c.id}" aria-labelledby="h-${c.id}">
       <h2 id="h-${c.id}">${c.name}</h2>
-      <div class="menu">${DISHES.filter(d => d.cat === c.id).map(dishHTML).join("")}</div>
+      ${c.id === "destaques" ? `<div class="feat-grid">${featuredDishes().map(featHTML).join("")}</div>` : `<div class="menu">${catDishes(c.id).map(dishHTML).join("")}</div>`}
     </section>`).join("");
 }
 function markCategory() {
@@ -482,11 +505,12 @@ function render() {
     </li>`;
   }).join("");
   DISHES.forEach(d => {
-    const b = document.getElementById("add-" + d.id);
     const q = cart[d.id] || 0;
-    b.classList.toggle("in", q > 0 && !closed);
-    b.disabled = closed;
-    b.textContent = closed ? "Fechado" : q > 0 ? `No carrinho (${q}) · +1` : "Adicionar";
+    document.querySelectorAll(`[data-add="${d.id}"]`).forEach(b => {
+      b.classList.toggle("in", q > 0 && !closed);
+      b.disabled = closed;
+      b.textContent = closed ? "Fechado" : q > 0 ? `No carrinho (${q}) · +1` : "Adicionar";
+    });
   });
 }
 
@@ -814,10 +838,12 @@ function applyHours() {
 }
 async function loadHours() {
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/dayse_config?id=eq.1&select=modo,aberto_manual,horarios,prazo_min`, { headers: { apikey: SUPABASE_KEY } });
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/dayse_config?id=eq.1&select=modo,aberto_manual,horarios,prazo_min,destaques`, { headers: { apikey: SUPABASE_KEY } });
     if (!r.ok) throw new Error("HTTP " + r.status);
     const [c] = await r.json(); shopConfig = c || null;
     if (c && Number.isFinite(c.prazo_min) && c.prazo_min > 0) document.getElementById("eta").textContent = fmtPrazo(c.prazo_min);
+    const f = c && Array.isArray(c.destaques) ? c.destaques.filter(Boolean) : [];
+    if (f.join() !== FEATURED.join()) { FEATURED = f; renderMenu(); render(); measureStick(); markCategory(); }
   } catch (e) { console.warn("Cardápio: não foi possível ler o horário de funcionamento.", e); }
   applyHours();
 }

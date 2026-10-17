@@ -227,6 +227,22 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 .photo-btns { display: flex; gap: 8px; flex-wrap: wrap }
 .file-btn { position: relative; overflow: hidden }
 .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer }
+.feat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px 14px; margin-bottom: 14px }
+.feat-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 10px }
+.feat-head h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 19px }
+.feat-head h3::first-letter { color: var(--brand-gold) }
+.feat-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px }
+.feat-slot { min-height: 76px; border: 2px dashed var(--line); border-radius: 12px; display: flex; align-items: center; gap: 10px; padding: 8px 10px; color: var(--muted); font-size: 13px; font-weight: 600; transition: border-color .15s, background .15s, transform .15s; position: relative }
+.feat-slot.empty { justify-content: center; text-align: center }
+.feat-slot.full { border-style: solid; border-color: var(--brand-gold); color: var(--ink); background: var(--bg) }
+.feat-slot.over { border-color: var(--brand-gold); border-style: solid; background: rgba(198,161,91,.16); transform: scale(1.02) }
+.feat-slot .thumb { width: 48px; height: 48px; flex: none; font-size: 18px }
+.feat-slot .f-name { font-weight: 700; font-size: 14px; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical }
+.feat-slot .f-price { color: var(--muted); font-size: 12.5px; font-weight: 600 }
+.feat-slot .f-x { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; display: grid; place-items: center }
+.feat-slot .f-x:hover { color: var(--ink) }
+.feat-slot .f-n { position: absolute; top: 4px; left: 8px; font-size: 11px; color: var(--muted) }
+@media (max-width: 560px) { .feat-slots { grid-template-columns: 1fr } .feat-slot { min-height: 60px } }
 .l-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px }
 .l-filter .t-filter { margin-bottom: 0 }
 .cw { display: inline-flex }
@@ -314,6 +330,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <button class="btn small" id="new"><svg class="i"><use href="#i-plus"/></svg>Adicionar</button>
         <button class="btn ghost small" id="trash-btn"><svg class="i"><use href="#i-trash"/></svg>Lixeira <span class="badge zero" id="trash-count">0</span></button>
       </div>
+    </div>
+    <div class="feat" id="feat" hidden>
+      <div class="feat-head"><h3>★ Destaques</h3><span class="msg">Aparecem no topo do cardápio do site. Arraste um prato pelo ícone de três linhas até um dos espaços.</span></div>
+      <div class="feat-slots" id="feat-slots"></div>
     </div>
     <div class="l-filter"><div class="t-filter" id="l-filter" role="group" aria-label="Filtrar por categoria"></div>
       <button type="button" class="btn ghost small" id="cat-add"><svg class="i"><use href="#i-plus"/></svg>Adicionar categoria</button></div>
@@ -519,7 +539,28 @@ function catList(tipo) {
 }
 const catName = (tipo, id) => (catList(tipo).find(c => c.id === id) || { nome: cap(id || "") }).nome;
 
+// Destaques: 3 espaços com ids de pratos, guardados em dayse_config.destaques.
+const featIds = () => { const a = Array.isArray(config?.destaques) ? config.destaques.slice(0, 3) : []; while (a.length < 3) a.push(null); return a; };
+function renderFeat() {
+  $("feat").hidden = view !== "item" || !config;
+  if ($("feat").hidden) return;
+  $("feat-slots").innerHTML = featIds().map((id, i) => {
+    const r = id && live().find(x => x.id === id && x.tipo === "item");
+    return r ? `<div class="feat-slot full" data-slot="${i}">${thumbHTML(r)}<div><div class="f-name">${esc(r.nome)}</div><div class="f-price">${brl.format(+r.preco)}${r.ativo ? "" : " · oculto no site"}</div></div>
+        <button type="button" class="f-x" data-unfeat="${i}" aria-label="Tirar ${esc(r.nome)} dos destaques" title="Tirar dos destaques">×</button></div>`
+      : `<div class="feat-slot empty" data-slot="${i}">Arraste um prato para cá</div>`;
+  }).join("");
+}
+async function setFeat(slot, id) {
+  const a = featIds().map(x => x === id ? null : x); a[slot] = id;
+  const r = id && rows.find(x => x.id === id);
+  try { await saveConfig({ destaques: a }, id ? `${r ? r.nome : "Prato"} em destaque` : "Destaque removido"); }
+  catch (err) { toast("Não foi possível salvar o destaque: " + err.message); }
+  renderFeat();
+}
+
 function renderList() {
+  renderFeat();
   const n = trashed().length;
   $("trash-count").textContent = n; $("trash-count").className = n ? "badge" : "badge zero";
   if ((view !== "item" && view !== "ingrediente") || !config) return;
@@ -689,6 +730,11 @@ addEventListener("pointermove", e => {
   const { row, ph, group } = rowDrag;
   rowDrag.y = e.clientY;
   row.style.left = e.clientX - rowDrag.dx + "px"; row.style.top = e.clientY - rowDrag.dy + "px";
+  // Sobre um espaço de destaque: marca o espaço e não mexe na ordem da lista.
+  const slot = view === "item" ? document.elementFromPoint(e.clientX, e.clientY)?.closest(".feat-slot") : null;
+  document.querySelectorAll(".feat-slot.over").forEach(x => x !== slot && x.classList.remove("over"));
+  rowDrag.slot = slot ? +slot.dataset.slot : null;
+  if (slot) { slot.classList.add("over"); if (e.clientY < 60) scrollBy(0, -12); return; }
   // O espaço vai para antes do primeiro item cujo meio está abaixo do ponteiro.
   const others = [...group.querySelectorAll(".row:not(.dragging)")];
   const next = others.find(x => { const q = x.getBoundingClientRect(); return e.clientY < q.top + q.height / 2; }) || null;
@@ -705,7 +751,15 @@ addEventListener("pointermove", e => {
 addEventListener("pointerup", e => { if (rowDrag && e.pointerId === rowDrag.id) endRowDrag(); });
 addEventListener("pointercancel", e => { if (rowDrag && e.pointerId === rowDrag.id) endRowDrag(); });
 async function endRowDrag() {
-  const { row, ph, group, before } = rowDrag; rowDrag = null;
+  const { row, ph, group, before, slot } = rowDrag; rowDrag = null;
+  if (slot != null) {
+    // Solto num destaque: o prato volta ao lugar de antes e entra no espaço.
+    const el = document.querySelector(`.feat-slot[data-slot="${slot}"]`), r = el.getBoundingClientRect();
+    row.classList.add("landing"); Object.assign(row.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px" });
+    await new Promise(ok => setTimeout(ok, 170));
+    ph.remove(); document.body.classList.remove("row-dragging");
+    renderList(); setFeat(slot, row.dataset.row); return;
+  }
   // Pousa o item no espaço e só então o devolve à lista.
   const r = ph.getBoundingClientRect();
   row.classList.add("landing"); row.style.left = r.left + "px"; row.style.top = r.top + "px";
@@ -747,6 +801,7 @@ document.addEventListener("click", async e => {
     try { const row = await patchRow(d.restore, { excluido_em: null }); renderTrash(); renderList(); toast(`${row.nome} restaurado`); }
     catch (err) { t.disabled = false; toast("Não foi possível restaurar: " + err.message); }
   }
+  else if (d.unfeat) setFeat(+d.unfeat, null);
   else if (d.lfilter) { lFilter = d.lfilter; renderList(); }
   else if (t.id === "cat-add") openCat();
   else if (d.catedit) openCat(d.catedit);
