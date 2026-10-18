@@ -224,6 +224,7 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 .s6 { grid-column: span 6 } .s3 { grid-column: span 3 } .s2 { grid-column: span 2 }
 @media (max-width: 480px) { .s3 { grid-column: span 6 } }
 .check { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px }
+.check input { width: auto; flex: none; margin: 0 } .field > .check { min-height: 42px; white-space: nowrap }
 .sheet-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; flex-wrap: wrap }
 .cells { display: flex; flex-direction: column; gap: 6px }
 .cell { display: flex; gap: 6px; align-items: center }
@@ -424,9 +425,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       <div class="field s6" id="e-opts-f"><span class="flabel">Opções <small>o cliente escolhe uma ao pedir</small></span><div class="cells" id="e-opts"></div></div>
       <div class="field s6" id="e-adds-f"><span class="flabel">Adicionais <small>o cliente escolhe a quantidade</small></span><div class="cells" id="e-adds"></div>
         <button type="button" class="cell-new" id="e-add-new">+ adicional</button></div>
-      <div class="field s2"><label for="e-preco">Preço (R$)</label><input id="e-preco" type="number" step="0.01" min="0" inputmode="decimal" required></div>
-      <div class="field s2"><label for="e-ordem">Ordem</label><input id="e-ordem" type="number" step="1"></div>
-      <div class="field s2" style="justify-content: flex-end"><label class="check"><input type="checkbox" id="e-ativo"> Visível no site</label></div>
+      <div class="field s3"><label for="e-preco">Preço (R$)</label><input id="e-preco" type="number" step="0.01" min="0" inputmode="decimal" required></div>
+      <input id="e-ordem" type="hidden">
+      <div class="field s3" style="justify-content: flex-end"><label class="check"><input type="checkbox" id="e-ativo"> Visível no site</label></div>
       <div class="s6 macros-row" hidden>
       <div class="field"><label for="e-p"><span class="dot" style="--c: var(--m-prot)"></span>Proteína (g)</label><input id="e-p" type="number" step="0.1" min="0" inputmode="decimal"></div>
       <div class="field"><label for="e-g"><span class="dot" style="--c: var(--m-fat)"></span>Gordura (g)</label><input id="e-g" type="number" step="0.1" min="0" inputmode="decimal"></div>
@@ -957,7 +958,7 @@ $("edit").addEventListener("submit", async e => {
   const data = { nome, categoria: cat, descricao: isItem ? ($("e-desc").value.trim() || null) : null,
     porcao: isItem ? ($("e-qtd").value ? `${+$("e-qtd").value} ${$("e-un").value}` : null) : ($("e-porcao").value.trim() || null),
     ...(isItem ? { opcoes: readOpts(), adicionais: readAdds() } : {}),
-    preco, ordem: parseInt($("e-ordem").value, 10) || 0, ativo: $("e-ativo").checked, proteina: num("e-p"), gordura: num("e-g"), carboidrato: num("e-c") };
+    preco, ordem: editing && editing.categoria !== cat ? Math.max(0, ...rows.map(x => x.ordem)) + 1 : parseInt($("e-ordem").value, 10) || 0, ativo: $("e-ativo").checked, proteina: num("e-p"), gordura: num("e-g"), carboidrato: num("e-c") };
   $("e-save").disabled = true;
   try {
     const id = editing ? editing.id : (() => { let x = slug(nome) || "item"; if (rows.some(r => r.id === x)) x += "-" + Date.now().toString(36).slice(-4); return x; })();
