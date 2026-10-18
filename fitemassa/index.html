@@ -203,6 +203,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 .d-sec h3 { font-family: var(--display); font-weight: 400; font-size: 17px; margin: 16px 0 6px }
 .d-sec h3 small { font-family: var(--sans, inherit); font-size: 12px; color: var(--muted); margin-left: 6px }
 .d-opt { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; cursor: pointer; font-size: 15px }
+.d-opt-n { flex: 1 } .d-opt-p { font-variant-numeric: tabular-nums }
 .d-opt:has(input:checked) { border-color: var(--accent); background: var(--hl) }
 .d-opt input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0 }
 .d-obs { width: 100%; min-height: 70px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); font: inherit; resize: vertical; margin-bottom: 12px }
@@ -452,12 +453,14 @@ function configItem(id) {
   const c = configs[id]; if (!c) return null;
   const d = DISHES.find(x => x.id === c.dish); if (!d) return null;
   const adds = (c.adds || []).filter(a => a.qtd > 0);
-  const price = Math.round((d.price + adds.reduce((s, a) => s + a.valor * a.qtd, 0)) * 100) / 100;
+  const base = c.tamanho ? +c.tamanho.valor || 0 : d.price;
+  const price = Math.round((base + adds.reduce((s, a) => s + a.valor * a.qtd, 0)) * 100) / 100;
   const parts = [];
+  if (c.tamanho) parts.push(c.tamanho.nome);
   if (c.opcao) parts.push(c.opcao);
   if (adds.length) parts.push(adds.map(a => `${a.qtd > 1 ? a.qtd + "x " : "+ "}${a.nome}`).join(", "));
   if (c.obs) parts.push(`Obs.: ${c.obs}`);
-  return { ...d, id, cfg: true, dish: d.id, opcao: c.opcao || "", adds, obs: c.obs || "", price, detail: parts.join(" · ") };
+  return { ...d, id, cfg: true, dish: d.id, tamanho: c.tamanho ? c.tamanho.nome : "", opcao: c.opcao || "", adds, obs: c.obs || "", price, detail: parts.join(" · ") };
 }
 const byId = id => DISHES.find(d => d.id === id) || plateItem(id) || configItem(id);
 
@@ -473,7 +476,7 @@ function dishHTML(d) { return `
       <div>
         <h3>${d.name}</h3>
         <p>${d.desc}</p>
-        <div class="meta"><span class="price">${brl.format(d.price)}</span>${d.weight ? `<span class="weight">${d.weight}</span>` : ""}</div>
+        <div class="meta"><span class="price">${priceLabel(d)}</span></div>
       </div>
       <button class="add" data-add="${d.id}">Adicionar</button>
     </article>`; }
@@ -481,13 +484,15 @@ function dishHTML(d) { return `
 let FEATURED = [];
 const featuredDishes = () => FEATURED.map(id => DISHES.find(d => d.id === id)).filter(Boolean);
 // Cartão de destaque: foto grande em cima, texto e botão embaixo.
+// Com mais de um tamanho, o card mostra o menor preço como "a partir de".
+const priceLabel = d => (d.tamanhos || []).length > 1 ? `a partir de ${brl.format(Math.min(...d.tamanhos.map(t => t.valor)))}` : brl.format(d.price);
 function featHTML(d) { return `
     <article class="dish feat-card">
       ${d.foto ? `<div class="plate has-photo feat-photo"><img src="${d.foto}" alt="${d.name}" loading="lazy"></div>` : `<div class="plate feat-photo" aria-hidden="true">${d.name[0]}</div>`}
       <div class="feat-body">
         <h3>${d.name}</h3>
         ${d.desc ? `<p>${d.desc}</p>` : ""}
-        <div class="meta"><span class="price">${brl.format(d.price)}</span>${d.weight ? `<span class="weight">${d.weight}</span>` : ""}</div>
+        <div class="meta"><span class="price">${priceLabel(d)}</span></div>
       </div>
       <button class="add" data-add="${d.id}">Adicionar</button>
     </article>`; }
@@ -606,7 +611,7 @@ document.addEventListener("click", e => {
   }
   else if (t.dataset.add && !closed) {
     const d = DISHES.find(x => x.id === t.dataset.add);
-    if (d && ((d.opcoes || []).length || (d.adicionais || []).length)) openDish(d, t.closest(".dish"));
+    if (d && ((d.tamanhos || []).length || (d.opcoes || []).length || (d.adicionais || []).length)) openDish(d, t.closest(".dish"));
     else { flash(t.closest(".dish")); fly(t.closest(".dish").querySelector(".plate")); setQty(t.dataset.add, (cart[t.dataset.add] || 0) + 1); }
   }
   else if (t.id === "d-close") closeOverlay("d-overlay");
@@ -635,7 +640,7 @@ async function saveOrder() {
   const order = {
     nome: val("nome"), entrega,
     itens: lines.map(l => ({ nome: l.d.name, qtd: l.q, preco: l.d.price, ...(l.d.custom ? { detalhe: plateDetail(l.d) } : {}),
-      ...(l.d.cfg ? { ...(l.d.detail ? { detalhe: l.d.detail } : {}), ...(l.d.opcao ? { opcao: l.d.opcao } : {}),
+      ...(l.d.cfg ? { ...(l.d.detail ? { detalhe: l.d.detail } : {}), ...(l.d.tamanho ? { tamanho: l.d.tamanho } : {}), ...(l.d.opcao ? { opcao: l.d.opcao } : {}),
         ...(l.d.adds.length ? { adicionais: l.d.adds.map(a => ({ nome: a.nome, qtd: a.qtd, valor: a.valor })) } : {}), ...(l.d.obs ? { obs: l.d.obs } : {}) } : {}) })),
     pratos: lines.reduce((n, l) => n + l.q, 0),
     total: Math.round(lines.reduce((s, l) => s + l.q * l.d.price, 0) * 100) / 100
@@ -664,14 +669,17 @@ function closeOverlay(id) {
   document.getElementById(id).hidden = true;
   if ([...document.querySelectorAll(".overlay")].every(o => o.hidden)) document.body.style.overflow = "";
 }
-// Pop-up do prato: opção (obrigatória quando houver), adicionais com quantidade e comentário.
+// Pop-up do prato: tamanho (o primeiro já marcado), opção (obrigatória quando houver), adicionais com quantidade e comentário.
 let dishSel = null;
 function openDish(d, card) {
-  dishSel = { d, card, opcao: "", adds: {}, obs: "" };
+  const sizes = d.tamanhos || [];
+  dishSel = { d, card, tamanho: sizes[0] || null, opcao: "", adds: {}, obs: "" };
   document.getElementById("d-title").textContent = d.name;
   document.getElementById("d-desc").textContent = d.desc || "";
   const opts = d.opcoes || [], adds = d.adicionais || [];
   document.getElementById("d-list").innerHTML = `
+    ${sizes.length ? `<div class="d-sec"><h3>Tamanho</h3>${sizes.map((t, i) => `
+      <label class="d-opt"><input type="radio" name="d-size" value="${i}"${i ? "" : " checked"}> <span class="d-opt-n">${esc(t.nome)}</span><b class="d-opt-p">${brl.format(t.valor)}</b></label>`).join("")}</div>` : ""}
     ${opts.length ? `<div class="d-sec"><h3>Escolha uma opção<small>obrigatório</small></h3>${opts.map((o, i) => `
       <label class="d-opt"><input type="radio" name="d-opt" value="${i}"> ${esc(o)}</label>`).join("")}</div>` : ""}
     ${adds.length ? `<div class="d-sec"><h3>Adicionais</h3>${adds.map((a, i) => `
@@ -691,8 +699,8 @@ function openDish(d, card) {
   document.getElementById("d-close").focus();
 }
 function dishPrice() {
-  const { d, adds } = dishSel;
-  return d.price + (d.adicionais || []).reduce((s, a, i) => s + (+a.valor || 0) * (adds[i] || 0), 0);
+  const { d, adds, tamanho } = dishSel;
+  return (tamanho ? tamanho.valor : d.price) + (d.adicionais || []).reduce((s, a, i) => s + (+a.valor || 0) * (adds[i] || 0), 0);
 }
 function renderDish() {
   const { d, adds } = dishSel;
@@ -700,18 +708,19 @@ function renderDish() {
     document.getElementById("dq-" + i).value = adds[i] || 0;
     document.getElementById("dr-" + i).classList.toggle("on", (adds[i] || 0) > 0);
   });
-  document.getElementById("d-base").textContent = `Prato ${brl.format(d.price)}`;
+  document.getElementById("d-base").textContent = dishSel.tamanho ? `${dishSel.tamanho.nome} ${brl.format(dishSel.tamanho.valor)}` : `Prato ${brl.format(d.price)}`;
   document.getElementById("d-price").textContent = brl.format(dishPrice());
   document.getElementById("d-add").textContent = closed ? "Fechado" : `Adicionar · ${brl.format(dishPrice())}`;
   document.getElementById("d-add").disabled = closed;
 }
 document.getElementById("d-list").addEventListener("change", e => {
+  if (e.target.name === "d-size") { dishSel.tamanho = (dishSel.d.tamanhos || [])[+e.target.value] || null; renderDish(); }
   if (e.target.name === "d-opt") { dishSel.opcao = (dishSel.d.opcoes || [])[+e.target.value] || ""; document.getElementById("d-msg").textContent = ""; }
 });
 function addDish() {
   const { d, card } = dishSel;
   if ((d.opcoes || []).length && !dishSel.opcao) { document.getElementById("d-msg").textContent = "Escolha uma opção para continuar."; return; }
-  const cfg = { dish: d.id, opcao: dishSel.opcao,
+  const cfg = { dish: d.id, ...(dishSel.tamanho ? { tamanho: { nome: dishSel.tamanho.nome, valor: dishSel.tamanho.valor } } : {}), opcao: dishSel.opcao,
     adds: (d.adicionais || []).map((a, i) => ({ nome: a.nome, valor: +a.valor || 0, qtd: dishSel.adds[i] || 0 })).filter(a => a.qtd > 0),
     obs: document.getElementById("d-obs").value.trim() };
   // A mesma combinação soma na linha que já existe.
@@ -874,6 +883,7 @@ async function loadFromSupabase() {
     const kItem = k.filter(c => c.tipo === "item"), kIng = k.filter(c => c.tipo === "ingrediente").map(c => c.id);
     const mac = x => [+x.proteina, +x.gordura, +x.carboidrato];
     const items = rows.filter(x => x.tipo === "item").map(x => ({ id: x.id, cat: x.categoria, name: x.nome, desc: x.descricao || "", price: +x.preco, weight: x.porcao || "", foto: x.foto_url || "", macros: mac(x),
+      tamanhos: Array.isArray(x.tamanhos) ? x.tamanhos.filter(t => t && t.nome).map(t => ({ nome: t.nome, valor: +t.valor || 0 })) : [],
       opcoes: Array.isArray(x.opcoes) ? x.opcoes.filter(Boolean) : [], adicionais: Array.isArray(x.adicionais) ? x.adicionais.filter(a => a && a.nome) : [] }));
     const groups = [];
     rows.filter(x => x.tipo === "ingrediente").forEach(x => {
