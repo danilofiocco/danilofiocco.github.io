@@ -669,19 +669,19 @@ function closeOverlay(id) {
   document.getElementById(id).hidden = true;
   if ([...document.querySelectorAll(".overlay")].every(o => o.hidden)) document.body.style.overflow = "";
 }
-// Pop-up do prato: tamanho (o primeiro já marcado), opção (obrigatória quando houver), adicionais com quantidade e comentário.
+// Pop-up do prato: tamanho e opção (o primeiro de cada já marcado), adicionais com quantidade e comentário.
 let dishSel = null;
 function openDish(d, card) {
   const sizes = d.tamanhos || [];
-  dishSel = { d, card, tamanho: sizes[0] || null, opcao: "", adds: {}, obs: "" };
+  dishSel = { d, card, tamanho: sizes[0] || null, opcao: (d.opcoes || [])[0] || "", adds: {}, obs: "" };
   document.getElementById("d-title").textContent = d.name;
   document.getElementById("d-desc").textContent = d.desc || "";
   const opts = d.opcoes || [], adds = d.adicionais || [];
   document.getElementById("d-list").innerHTML = `
     ${sizes.length ? `<div class="d-sec"><h3>Tamanho</h3>${sizes.map((t, i) => `
       <label class="d-opt"><input type="radio" name="d-size" value="${i}"${i ? "" : " checked"}> <span class="d-opt-n">${esc(t.nome)}</span><b class="d-opt-p">${brl.format(t.valor)}</b></label>`).join("")}</div>` : ""}
-    ${opts.length ? `<div class="d-sec"><h3>Escolha uma opção<small>obrigatório</small></h3>${opts.map((o, i) => `
-      <label class="d-opt"><input type="radio" name="d-opt" value="${i}"> ${esc(o)}</label>`).join("")}</div>` : ""}
+    ${opts.length ? `<div class="d-sec"><h3>Escolha uma opção</h3>${opts.map((o, i) => `
+      <label class="d-opt"><input type="radio" name="d-opt" value="${i}"${i ? "" : " checked"}> ${esc(o)}</label>`).join("")}</div>` : ""}
     ${adds.length ? `<div class="d-sec"><h3>Adicionais</h3>${adds.map((a, i) => `
       <div class="b-row" id="dr-${i}">
         <span class="b-name">${esc(a.nome)}<span class="b-sub">+ ${brl.format(+a.valor || 0)}</span></span>
