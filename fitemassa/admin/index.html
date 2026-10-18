@@ -496,7 +496,7 @@ const $ = id => document.getElementById(id);
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const icon = n => `<svg class="i" aria-hidden="true"><use href="#i-${n}"/></svg>`;
-let session = null, rows = [], orders = [], seenOrders = null, view = "pedidos", editing = null, trashConfirm = null, tFilter = "todos", lFilter = "todas", categorias = DEFAULT_CATS, config = null, hours = null;
+let session = null, rows = [], orders = [], seenOrders = null, view = (() => { try { return ["pedidos", "item", "ingrediente", "horario", "config"].includes(localStorage.getItem("fm-admin-tela")) ? localStorage.getItem("fm-admin-tela") : "pedidos"; } catch (e) { return "pedidos"; } })(), editing = null, trashConfirm = null, tFilter = "todos", lFilter = "todas", categorias = DEFAULT_CATS, config = null, hours = null;
 
 try { session = JSON.parse(sessionStorage.getItem("fm-admin")); } catch (e) {}
 const keep = () => { try { session ? sessionStorage.setItem("fm-admin", JSON.stringify(session)) : sessionStorage.removeItem("fm-admin"); } catch (e) {} };
@@ -560,6 +560,7 @@ async function start() {
 function show(v) {
   if (v !== view) lFilter = "todas";
   view = v;
+  try { localStorage.setItem("fm-admin-tela", v); } catch (e) {} // ao recarregar, volta para esta tela
   document.querySelectorAll("#nav button").forEach(b => b.setAttribute("aria-current", b.dataset.view === v));
   $("v-list").hidden = v !== "item" && v !== "ingrediente"; $("v-hours").hidden = v !== "horario"; $("v-config").hidden = v !== "config"; $("v-orders").hidden = v !== "pedidos";
   $("list-title").textContent = v === "item" ? "Cardápio" : "Monte seu Prato";
