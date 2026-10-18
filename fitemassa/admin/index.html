@@ -132,6 +132,17 @@ body.row-dragging, body.row-dragging * { cursor: grabbing !important; user-selec
 .big.open { background: var(--ok); color: #fff; box-shadow: none }
 .big.close { background: var(--closed); color: #fff; box-shadow: none }
 
+.shop-sec { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 6px 18px 10px; margin-bottom: 14px }
+.shop-sec h3 { margin: 10px 0 4px; font-family: var(--display); font-weight: 400; font-size: 19px }
+.shop-i { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); cursor: pointer }
+.shop-sec h3 + .shop-i { border-top: 0 }
+.shop-i input { width: 20px; height: 20px; flex: none; accent-color: var(--brand); margin: 0 }
+.shop-i span { flex: 1; min-width: 0; display: flex; flex-direction: column }
+.shop-i small { color: var(--muted); font-size: 12.5px }
+.shop-i.done b { text-decoration: line-through; color: var(--muted); font-weight: 600 }
+.shop-i .cx { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; font-size: 16px }
+.shop-add { display: flex; gap: 8px; margin: 4px 0 24px }
+.shop-add input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font: inherit }
 .prazo { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; margin-bottom: 14px }
 .prazo h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 19px }
 .pix-in { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); width: min(300px, 100%); font: inherit }
@@ -307,6 +318,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   <symbol id="i-print" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M7 8V3h10v5M7 17H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-3M7 14h10v7H7z"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h11l2-8H6.2"/><circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></g></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
   <symbol id="i-drag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M5 7h14M5 12h14M5 17h14"/></symbol>
@@ -321,6 +333,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       <button data-view="item" aria-current="false">Cardápio</button>
       <button data-view="ingrediente" aria-current="false">Monte seu Prato</button>
       <button data-view="horario" aria-current="false"><svg class="i"><use href="#i-clock"/></svg>Horários<span class="state" id="state" hidden></span></button>
+      <button data-view="compras" aria-current="false"><svg class="i"><use href="#i-cart"/></svg>Lista de compras</button>
       <button data-view="config" aria-current="false"><svg class="i"><use href="#i-gear"/></svg>Configurações</button>
     </nav>
     <button class="btn ghost small" id="theme" type="button" aria-label="Alternar modo claro/escuro" title="Modo claro/escuro"></button>
@@ -363,6 +376,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <div class="l-filter"><div class="t-filter" id="l-filter" role="group" aria-label="Filtrar por categoria"></div>
       <button type="button" class="btn ghost small" id="cat-add"><svg class="i"><use href="#i-plus"/></svg>Adicionar categoria</button></div>
     <div id="list"><p class="empty">Carregando…</p></div>
+  </section>
+
+  <section id="v-compras" hidden>
+    <div class="bar"><h2>Lista de compras</h2><span class="msg" id="shop-count"></span><button type="button" class="btn ghost small" id="shop-clear">Desmarcar todos</button></div>
+    <p class="msg">Tudo o que aparece nas descrições, opções e adicionais dos itens visíveis e nos ingredientes do Monte seu Prato. As marcações ficam salvas neste aparelho.</p>
+    <div id="shop-list"></div>
+    <form class="shop-add" id="shop-add"><input id="shop-new" maxlength="60" placeholder="Faltou algo? Escreva aqui" aria-label="Novo item da lista"><button class="btn small">Adicionar</button></form>
   </section>
 
   <section id="v-config" hidden>
@@ -498,7 +518,7 @@ const $ = id => document.getElementById(id);
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const icon = n => `<svg class="i" aria-hidden="true"><use href="#i-${n}"/></svg>`;
-let session = null, rows = [], orders = [], seenOrders = null, view = (() => { try { return ["pedidos", "item", "ingrediente", "horario", "config"].includes(localStorage.getItem("fm-admin-tela")) ? localStorage.getItem("fm-admin-tela") : "pedidos"; } catch (e) { return "pedidos"; } })(), editing = null, trashConfirm = null, tFilter = "todos", lFilter = "todas", categorias = DEFAULT_CATS, config = null, hours = null;
+let session = null, rows = [], orders = [], seenOrders = null, view = (() => { try { return ["pedidos", "item", "ingrediente", "horario", "compras", "config"].includes(localStorage.getItem("fm-admin-tela")) ? localStorage.getItem("fm-admin-tela") : "pedidos"; } catch (e) { return "pedidos"; } })(), editing = null, trashConfirm = null, tFilter = "todos", lFilter = "todas", categorias = DEFAULT_CATS, config = null, hours = null;
 
 try { session = JSON.parse(sessionStorage.getItem("fm-admin")); } catch (e) {}
 const keep = () => { try { session ? sessionStorage.setItem("fm-admin", JSON.stringify(session)) : sessionStorage.removeItem("fm-admin"); } catch (e) {} };
@@ -564,11 +584,101 @@ function show(v) {
   view = v;
   try { localStorage.setItem("fm-admin-tela", v); } catch (e) {} // ao recarregar, volta para esta tela
   document.querySelectorAll("#nav button").forEach(b => b.setAttribute("aria-current", b.dataset.view === v));
-  $("v-list").hidden = v !== "item" && v !== "ingrediente"; $("v-hours").hidden = v !== "horario"; $("v-config").hidden = v !== "config"; $("v-orders").hidden = v !== "pedidos";
+  $("v-list").hidden = v !== "item" && v !== "ingrediente"; $("v-hours").hidden = v !== "horario"; $("v-config").hidden = v !== "config"; $("v-compras").hidden = v !== "compras"; $("v-orders").hidden = v !== "pedidos";
   $("list-title").textContent = v === "item" ? "Cardápio" : "Monte seu Prato";
-  renderList(); if (v === "pedidos") renderOrders();
+  renderList(); if (v === "pedidos") renderOrders(); if (v === "compras") renderShop();
   document.body.classList.toggle("wide", v === "pedidos");
 }
+
+/* ---------- lista de compras ---------- */
+// Junta o que é preciso comprar a partir das descrições, opções e adicionais dos itens visíveis e dos ingredientes do Monte seu Prato.
+// Cada entrada: [nome na lista, seção, padrão procurado no texto sem acento]. Os mais específicos vêm antes e "consomem" o trecho.
+const SHOP = [
+  ["Mix de folhas", "Hortifrúti", "mix de folhas"],
+  ["Tomate cereja", "Hortifrúti", "tomates? cereja"], ["Tomate seco", "Mercearia", "tomates? secos?"],
+  ["Cebola roxa", "Hortifrúti", "cebolas? roxas?"], ["Batata-doce", "Hortifrúti", "batatas? doces?"], ["Batata palha", "Mercearia", "batata palha"],
+  ["Alface", "Hortifrúti", "alface( crespa| americana)?"], ["Rúcula", "Hortifrúti", "rucula"], ["Tomate", "Hortifrúti", "tomates?"],
+  ["Cenoura", "Hortifrúti", "cenouras?"], ["Pepino", "Hortifrúti", "pepinos?"], ["Cebola", "Hortifrúti", "cebolas?"], ["Couve", "Hortifrúti", "couve"],
+  ["Manga", "Hortifrúti", "mangas?"], ["Abacaxi", "Hortifrúti", "abacaxis?"], ["Banana nanica", "Hortifrúti", "bananas?( nanicas?)?"],
+  ["Maçã", "Hortifrúti", "macas?"], ["Morango", "Hortifrúti", "morangos?"], ["Mamão", "Hortifrúti", "mamao"], ["Melancia", "Hortifrúti", "melancias?"],
+  ["Beterraba", "Hortifrúti", "beterrabas?"], ["Gengibre", "Hortifrúti", "gengibre"], ["Hortelã", "Hortifrúti", "hortela"],
+  ["Limão", "Hortifrúti", "limao|limoes"], ["Laranja", "Hortifrúti", "laranjas?"], ["Maracujá", "Hortifrúti", "maracujas?"],
+  ["Manjericão", "Hortifrúti", "manjericao"], ["Batata", "Hortifrúti", "batatas?"], ["Legumes variados", "Hortifrúti", "legumes"],
+  ["Ingredientes do vinagrete (tomate, cebola, pimentão)", "Hortifrúti", "vinagrete"],
+  ["Peito de peru", "Frios e laticínios", "peito de peru"], ["Filé de frango", "Carnes e ovos", "(file de )?frango"],
+  ["Filé mignon", "Carnes e ovos", "(file de )?mignon"], ["Patinho moído", "Carnes e ovos", "patinho|carne moida"],
+  ["Filé de tilápia", "Carnes e ovos", "(file de )?tilapia"], ["Atum", "Mercearia", "atum"], ["Ovos", "Carnes e ovos", "ovos?|omelete"],
+  ["Bacon", "Carnes e ovos", "bacon"],
+  ["Queijo prato", "Frios e laticínios", "queijo prato"], ["Queijo muçarela", "Frios e laticínios", "queijo mucarela|mussarela|mucarela"],
+  ["Queijo minas padrão", "Frios e laticínios", "queijo minas( padrao)?"], ["Parmesão", "Frios e laticínios", "parmesao"],
+  ["Cream cheese", "Frios e laticínios", "cream cheese"], ["Catupiry", "Frios e laticínios", "catupiry"], ["Manteiga", "Frios e laticínios", "manteiga"],
+  ["Leite integral", "Frios e laticínios", "leite( integral)?"], ["Iogurte natural", "Frios e laticínios", "iogurte"], ["Queijo", "Frios e laticínios", "queijo"],
+  ["Baguete", "Padaria", "baguetes?"], ["Pão de forma integral", "Padaria", "pao de forma integral"], ["Pão de forma", "Padaria", "pao de forma"],
+  ["Pão francês", "Padaria", "pao frances"], ["Tortilha de trigo", "Padaria", "tortilhas?"], ["Croutons", "Padaria", "croutons?"],
+  ["Arroz integral", "Mercearia", "arroz integral"], ["Arroz branco", "Mercearia", "arroz( branco)?"],
+  ["Macarrão parafuso sem glúten", "Mercearia", "macarrao parafuso( sem gluten)?"], ["Macarrão", "Mercearia", "macarrao"],
+  ["Molho caesar", "Mercearia", "molho caesar"], ["Molho pesto", "Mercearia", "pesto"], ["Molho tártaro", "Mercearia", "tartaro"], ["Molho rosé", "Mercearia", "molho rose"],
+  ["Maionese", "Mercearia", "maionese"], ["Mostarda", "Mercearia", "mostarda"], ["Mel", "Mercearia", "mel"], ["Azeite", "Mercearia", "azeite"], ["Sal", "Mercearia", "sal"],
+  ["Açúcar", "Mercearia", "acucar"], ["Azeitonas", "Mercearia", "azeitonas?"], ["Milho em conserva", "Mercearia", "milho"], ["Ervilha", "Mercearia", "ervilhas?"],
+  ["Chia", "Mercearia", "chia"], ["Neston", "Mercearia", "neston"], ["Farinha láctea", "Mercearia", "farinha lactea"], ["Gelo", "Mercearia", "gelo"]
+].map(([nome, sec, re]) => ({ nome, sec, re: new RegExp(`(^|[^a-z])(${re})(?![a-z])`, "g") }));
+const SHOP_SECS = ["Hortifrúti", "Carnes e ovos", "Frios e laticínios", "Padaria", "Mercearia", "Outros"];
+const plain = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+// Acha os itens da tabela num texto; o que sobra só vira item se for um nome curto (opção, adicional ou ingrediente).
+function shopFind(text, keepRest) {
+  let t = plain(text); const found = [];
+  SHOP.forEach(f => { f.re.lastIndex = 0; if (f.re.test(t)) { found.push(f); f.re.lastIndex = 0; t = t.replace(f.re, "$1 "); } });
+  return { found, rest: keepRest && !found.length ? text.trim() : "" };
+}
+function shopList() {
+  const map = new Map();
+  const add = (nome, sec, onde) => { const k = plain(nome); const e = map.get(k) || { nome, sec, onde: new Set() }; e.onde.add(onde); map.set(k, e); };
+  const scan = (text, onde, keepRest) => {
+    const { found, rest } = shopFind(text, keepRest);
+    found.forEach(f => add(f.nome, f.sec, onde));
+    if (rest && !/^(sem|com|nenhum|carne (ao|mal|bem))\b/i.test(rest)) add(rest.replace(/\s+/g, " "), "Outros", onde);
+  };
+  live().filter(r => r.ativo).forEach(r => {
+    const onde = r.tipo === "item" ? r.nome.replace(/\s+/g, " ").trim() : "Monte seu Prato";
+    if (r.tipo === "ingrediente") scan(r.nome, onde, true);
+    else (r.descricao || "").split(/[,.;\n]| e (?=[a-zà-ú])/i).forEach(p => scan(p, onde, false));
+    (Array.isArray(r.opcoes) ? r.opcoes : []).forEach(o => scan(o, onde, true));
+    (Array.isArray(r.adicionais) ? r.adicionais : []).forEach(a => a && a.nome && scan(a.nome, onde, true));
+  });
+  shopExtra.forEach(n => add(n, "Outros", "adicionado por você"));
+  return [...map.values()];
+}
+const SHOP_KEY = "fm-admin-compras";
+let shopChecked = {}, shopExtra = [];
+try { const s = JSON.parse(localStorage.getItem(SHOP_KEY)) || {}; shopChecked = s.checked || {}; shopExtra = s.extra || []; } catch (e) {}
+const saveShop = () => { try { localStorage.setItem(SHOP_KEY, JSON.stringify({ checked: shopChecked, extra: shopExtra })); } catch (e) {} };
+function renderShop() {
+  const list = shopList(), done = list.filter(i => shopChecked[plain(i.nome)]).length;
+  $("shop-count").textContent = list.length ? `${done} de ${list.length} marcados` : "";
+  $("shop-list").innerHTML = SHOP_SECS.map(sec => {
+    const items = list.filter(i => i.sec === sec).sort((a, b) => a.nome.localeCompare(b.nome));
+    return items.length ? `<div class="shop-sec"><h3>${sec}</h3>${items.map(i => { const k = plain(i.nome), on = !!shopChecked[k]; return `
+      <label class="shop-i${on ? " done" : ""}"><input type="checkbox" data-shop="${esc(k)}"${on ? " checked" : ""}>
+        <span><b>${esc(i.nome)}</b><small>${esc([...i.onde].join(" · "))}</small></span>
+        ${shopExtra.some(n => plain(n) === k) ? `<button type="button" class="cx" data-shop-del="${esc(k)}" aria-label="Remover ${esc(i.nome)}">×</button>` : ""}</label>`; }).join("")}</div>` : "";
+  }).join("") || `<p class="empty">Nenhum ingrediente encontrado nos itens cadastrados.</p>`;
+}
+$("shop-list").addEventListener("change", e => {
+  const k = e.target.dataset.shop; if (k === undefined) return;
+  if (e.target.checked) shopChecked[k] = true; else delete shopChecked[k];
+  e.target.closest(".shop-i").classList.toggle("done", e.target.checked);
+  saveShop(); $("shop-count").textContent = $("shop-count").textContent.replace(/^\d+/, Object.keys(shopChecked).filter(x => document.querySelector(`[data-shop="${CSS.escape(x)}"]`)).length);
+});
+$("shop-list").addEventListener("click", e => {
+  const k = e.target.dataset.shopDel; if (k === undefined) return;
+  e.preventDefault(); shopExtra = shopExtra.filter(n => plain(n) !== k); delete shopChecked[k]; saveShop(); renderShop();
+});
+$("shop-clear").addEventListener("click", () => { shopChecked = {}; saveShop(); renderShop(); });
+$("shop-add").addEventListener("submit", e => {
+  e.preventDefault(); const n = $("shop-new").value.trim(); if (!n) return;
+  if (!shopExtra.some(x => plain(x) === plain(n))) shopExtra.push(n);
+  $("shop-new").value = ""; saveShop(); renderShop();
+});
 
 /* ---------- lista ---------- */
 const live = () => rows.filter(r => !r.excluido_em);
@@ -609,6 +719,7 @@ async function setFeat(slot, id) {
 }
 
 function renderList() {
+  if (view === "compras") renderShop();
   renderFeat();
   const n = trashed().length;
   $("trash-count").textContent = n; $("trash-count").className = n ? "badge" : "badge zero";
