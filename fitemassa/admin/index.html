@@ -246,6 +246,8 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 .cell.new input { border-style: dashed; background: transparent }
 .cell-new { margin-top: 6px; width: 100%; text-align: left; padding: 9px 12px; border: 1px dashed var(--line); border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer }
 #e-preco:disabled { opacity: .6; cursor: not-allowed }
+.esc-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 2px }
+#e-esc-f .esc-head select { width: auto; flex: none; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font: inherit; font-size: 14px }
 .cell-new:hover { border-color: var(--brand-gold); color: var(--ink) }
 .flabel small, label small { font-weight: 500; color: var(--muted) }
 .macros-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 12px; align-items: end }
@@ -445,6 +447,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       <div class="field s6" id="e-desc-f"><label for="e-desc">Descrição</label><textarea id="e-desc"></textarea></div>
       <div class="field s6" id="e-sizes-f"><span class="flabel">Tamanho <small>cada um com seu preço; o primeiro vem marcado no site</small></span><div class="cells" id="e-sizes"></div></div>
       <div class="field s6" id="e-opts-f"><span class="flabel">Opções <small>o cliente escolhe uma ao pedir; a primeira é a padrão e já vem marcada no site</small></span><div class="cells" id="e-opts"></div></div>
+      <div class="field s6" id="e-esc-f"><div class="esc-head"><span class="flabel">Escolha</span>
+        <select id="e-esc-modo" aria-label="Quantos o cliente pode escolher"><option value="varios">uma ou mais</option><option value="ate">até</option></select>
+        <select id="e-esc-max" aria-label="Limite de itens" hidden></select></div>
+        <div class="cells" id="e-esc"></div></div>
       <div class="field s6" id="e-adds-f"><span class="flabel">Adicionais <small>o cliente escolhe a quantidade</small></span><div class="cells" id="e-adds"></div>
         <button type="button" class="cell-new" id="e-add-new">+ adicional</button></div>
       <div class="field s3"><label for="e-preco">Preço (R$)</label><input id="e-preco" type="number" step="0.01" min="0" inputmode="decimal" required></div>
@@ -1009,11 +1015,12 @@ function openEdit(r, dup) {
   $("e-un").value = m ? m[2].toLowerCase() : (r?.categoria === "sucos" ? "ml" : "g");
   $("e-porcao-f").hidden = isItem;
   $("e-desc-f").hidden = !isItem; $("e-foto-f").hidden = false;
-  $("e-sizes-f").hidden = !isItem; $("e-opts-f").hidden = !isItem; $("e-adds-f").hidden = !isItem;
+  $("e-sizes-f").hidden = !isItem; $("e-opts-f").hidden = !isItem; $("e-esc-f").hidden = !isItem; $("e-adds-f").hidden = !isItem;
   renderOpts(Array.isArray(r?.opcoes) ? r.opcoes : []); renderAdds(Array.isArray(r?.adicionais) ? r.adicionais : []);
   $("e-desc").value = r?.descricao || "";
   $("e-preco").value = r ? +r.preco : "";
   renderSizes(isItem && Array.isArray(r?.tamanhos) ? r.tamanhos : []);
+  renderEsc(isItem && r?.escolha && Array.isArray(r.escolha.itens) ? r.escolha : null);
   $("e-ordem").value = r && !dup ? r.ordem : (Math.max(0, ...rows.map(x => x.ordem)) + 1);
   $("e-ativo").checked = r ? r.ativo : true;
   $("e-p").value = r ? +r.proteina : 0; $("e-g").value = r ? +r.gordura : 0; $("e-c").value = r ? +r.carboidrato : 0;
@@ -1073,7 +1080,7 @@ $("edit").addEventListener("submit", async e => {
   const num = id => Math.max(0, parseFloat($(id).value) || 0);
   const data = { nome, categoria: cat, descricao: isItem ? ($("e-desc").value.trim() || null) : null,
     ...(isItem ? (editing ? {} : { porcao: null }) : { porcao: $("e-porcao").value.trim() || null }),
-    ...(isItem ? { tamanhos: sizes, opcoes: readOpts(), adicionais: readAdds() } : {}),
+    ...(isItem ? { tamanhos: sizes, opcoes: readOpts(), escolha: readEsc(), adicionais: readAdds() } : {}),
     preco, ordem: editing && editing.categoria !== cat ? Math.max(0, ...rows.map(x => x.ordem)) + 1 : parseInt($("e-ordem").value, 10) || 0, ativo: $("e-ativo").checked, proteina: num("e-p"), gordura: num("e-g"), carboidrato: num("e-c") };
   $("e-save").disabled = true;
   try {
@@ -1130,6 +1137,31 @@ $("e-opts").addEventListener("input", e => {
   $("e-opts").appendChild(optCell(null));
 });
 $("e-opts").addEventListener("click", e => { if (e.target.classList.contains("cx")) e.target.closest(".cell").remove(); });
+// Escolha: "uma ou mais" ou "até X itens", com células que se repetem como as opções.
+$("e-esc-max").innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => `<option value="${n}">${n} ${n === 1 ? "item" : "itens"}</option>`).join("");
+function escCell(v) {
+  const el = document.createElement("div"); el.className = v === null ? "cell new" : "cell";
+  el.innerHTML = `<input value="${esc(v || "")}" maxlength="60" placeholder="+ item" aria-label="Item da escolha">${v === null ? "" : `<button type="button" class="cx" aria-label="Remover item">×</button>`}`;
+  return el;
+}
+function renderEsc(e) {
+  $("e-esc-modo").value = e && e.modo === "ate" ? "ate" : "varios";
+  $("e-esc-max").value = String(e && e.max ? e.max : 2);
+  $("e-esc-max").hidden = $("e-esc-modo").value !== "ate";
+  const box = $("e-esc"); box.innerHTML = ""; (e ? e.itens : []).forEach(v => box.appendChild(escCell(v))); box.appendChild(escCell(null));
+}
+$("e-esc-modo").addEventListener("change", () => { $("e-esc-max").hidden = $("e-esc-modo").value !== "ate"; });
+$("e-esc").addEventListener("input", e => {
+  const cell = e.target.closest(".cell"); if (!cell || !cell.classList.contains("new") || !e.target.value.trim()) return;
+  cell.classList.remove("new"); cell.insertAdjacentHTML("beforeend", `<button type="button" class="cx" aria-label="Remover item">×</button>`);
+  $("e-esc").appendChild(escCell(null));
+});
+$("e-esc").addEventListener("click", e => { if (e.target.classList.contains("cx")) e.target.closest(".cell").remove(); });
+function readEsc() {
+  const itens = [...$("e-esc").querySelectorAll("input")].map(i => i.value.trim()).filter(Boolean);
+  if (!itens.length) return null;
+  return $("e-esc-modo").value === "ate" ? { modo: "ate", max: +$("e-esc-max").value, itens } : { modo: "varios", itens };
+}
 // Adicionais: "+ adicional" cria uma linha com Nome e Valor.
 function addCell(a) {
   const el = document.createElement("div"); el.className = "cell";
@@ -1365,10 +1397,10 @@ function waLink(num, o) {
   if (d.length <= 11) d = "55" + d;
   return `<a class="tk-wa" href="https://wa.me/${d}?text=${encodeURIComponent(orderText(o))}" target="_blank" rel="noopener"><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm5.8 14.1c-.24.68-1.4 1.3-1.94 1.35-.5.05-1.12.07-1.8-.11-.42-.13-.95-.31-1.63-.6-2.87-1.24-4.74-4.13-4.88-4.32-.14-.19-1.17-1.55-1.17-2.96s.74-2.1 1-2.39c.26-.28.57-.35.76-.35h.55c.18 0 .42-.07.65.5.24.57.81 1.98.88 2.12.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.17-.3.37-.43.5-.14.14-.29.3-.12.58.17.28.74 1.22 1.59 1.97 1.09.97 2.01 1.27 2.29 1.41.28.14.45.12.62-.07.17-.19.71-.83.9-1.12.19-.28.38-.24.64-.14.26.09 1.66.78 1.94.92.28.14.47.21.54.33.07.12.07.68-.17 1.36z"/></svg>${esc(num)}</a>`;
 }
-// Detalhes do item na comanda: tamanho, opção, adicionais e comentário em linhas separadas.
+// Detalhes do item na comanda: tamanho, opção, escolhas, adicionais e comentário em linhas separadas.
 const detalheHTML = i => {
   if (!i.detalhe) return "";
-  const lines = (i.tamanho || i.opcao || i.adicionais || i.obs) ? i.detalhe.split(" · ") : [i.detalhe];
+  const lines = (i.tamanho || i.opcao || i.escolhas || i.adicionais || i.obs) ? i.detalhe.split(" · ") : [i.detalhe];
   return lines.map(l => `<small${/^Obs\.:/.test(l) ? ' class="tk-obs"' : ""}>${esc(l)}</small>`).join("");
 };
 function ticketHTML(o, fresh) {
