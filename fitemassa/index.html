@@ -135,12 +135,18 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 .dish { position: relative; isolation: isolate }
 .featured h2::before { content: "★ "; color: var(--warm) }
 .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-top: 10px }
+/* No celular, Destaques em carrossel: o primeiro inteiro e um pedaço do próximo; arrasta e encaixa em cada cartão */
+@media (max-width: 640px) {
+.feat-grid { display: flex; gap: 12px; margin: 10px -16px 0; padding: 2px 16px 6px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch }
+.feat-grid::-webkit-scrollbar { display: none }
+.feat-grid > .feat-card { flex: 0 0 min(82%, 300px); scroll-snap-align: start }
+}
 .dish.feat-card { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 0; border: 2px solid var(--warm); border-radius: 16px; overflow: hidden; background: var(--surface) }
 .plate.feat-photo { width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 0; border: 0; font-size: 44px }
 .plate.feat-photo img { border-radius: 0 }
 .feat-body { padding: 12px 14px 4px; flex: 1 }
 .feat-card .add { margin: 8px 14px 14px; align-self: flex-start }
-@media (max-width: 480px) { .feat-grid { grid-template-columns: 1fr } .dish.feat-card .add { grid-column: auto } }
+@media (max-width: 480px) { .dish.feat-card .add { grid-column: auto } }
 .dish.flash::before { content: ""; position: absolute; inset: 0 -10px; border-radius: 12px; background: var(--hl); z-index: -1; animation: flash 1.4s ease-out forwards }
 @keyframes flash { 0%, 15% { opacity: 1 } 100% { opacity: 0 } }
 .flyer { position: fixed; z-index: 50; margin: 0; pointer-events: none; border-style: solid; border-color: var(--accent); box-shadow: 0 6px 18px rgba(0,0,0,.2) }
