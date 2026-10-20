@@ -247,6 +247,7 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 .cell-new { margin-top: 6px; width: 100%; text-align: left; padding: 9px 12px; border: 1px dashed var(--line); border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer }
 #e-preco:disabled { opacity: .6; cursor: not-allowed }
 .esc-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 2px }
+.esc-hint { color: var(--muted); font-size: 12px }
 #e-esc-f .esc-head select { width: auto; flex: none; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font: inherit; font-size: 14px }
 .cell-new:hover { border-color: var(--brand-gold); color: var(--ink) }
 .flabel small, label small { font-weight: 500; color: var(--muted) }
@@ -446,11 +447,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
       <div class="field s3" id="e-qtd-f" hidden><label for="e-qtd">Peso ou volume</label><div class="unit"><input id="e-qtd" type="number" min="0" step="1" inputmode="numeric" placeholder="ex.: 350"><select id="e-un" aria-label="Unidade"><option value="g">g</option><option value="ml">ml</option></select></div></div>
       <div class="field s6" id="e-desc-f"><label for="e-desc">Descrição</label><textarea id="e-desc"></textarea></div>
       <div class="field s6" id="e-sizes-f"><span class="flabel">Tamanho <small>cada um com seu preço; o primeiro vem marcado no site</small></span><div class="cells" id="e-sizes"></div></div>
-      <div class="field s6" id="e-esc-f"><div class="esc-head"><span class="flabel">Escolha</span>
+      <div class="field s6" id="e-esc-f"><div class="esc-head"><span class="flabel">Opções</span>
         <select id="e-esc-modo" aria-label="Quantos o cliente pode escolher"><option value="varios">uma ou mais</option><option value="ate">até</option></select>
-        <select id="e-esc-max" aria-label="Limite de itens" hidden></select></div>
+        <select id="e-esc-max" aria-label="Limite de itens" hidden></select><small class="esc-hint">a primeira é a padrão e já vem marcada no site</small></div>
         <div class="cells" id="e-esc"></div></div>
-      <div class="field s6" id="e-opts-f"><span class="flabel">Opções <small>o cliente escolhe uma ao pedir; a primeira é a padrão e já vem marcada no site</small></span><div class="cells" id="e-opts"></div></div>
       <div class="field s6" id="e-adds-f"><span class="flabel">Adicionais <small>o cliente escolhe a quantidade</small></span><div class="cells" id="e-adds"></div>
         <button type="button" class="cell-new" id="e-add-new">+ adicional</button></div>
       <div class="field s3"><label for="e-preco">Preço (R$)</label><input id="e-preco" type="number" step="0.01" min="0" inputmode="decimal" required></div>
@@ -1015,12 +1015,12 @@ function openEdit(r, dup) {
   $("e-un").value = m ? m[2].toLowerCase() : (r?.categoria === "sucos" ? "ml" : "g");
   $("e-porcao-f").hidden = isItem;
   $("e-desc-f").hidden = !isItem; $("e-foto-f").hidden = false;
-  $("e-sizes-f").hidden = !isItem; $("e-opts-f").hidden = !isItem; $("e-esc-f").hidden = !isItem; $("e-adds-f").hidden = !isItem;
-  renderOpts(Array.isArray(r?.opcoes) ? r.opcoes : []); renderAdds(Array.isArray(r?.adicionais) ? r.adicionais : []);
+  $("e-sizes-f").hidden = !isItem; $("e-esc-f").hidden = !isItem; $("e-adds-f").hidden = !isItem;
+  renderAdds(Array.isArray(r?.adicionais) ? r.adicionais : []);
   $("e-desc").value = r?.descricao || "";
   $("e-preco").value = r ? +r.preco : "";
   renderSizes(isItem && Array.isArray(r?.tamanhos) ? r.tamanhos : []);
-  renderEsc(isItem && r?.escolha && Array.isArray(r.escolha.itens) ? r.escolha : null);
+  renderEsc(!isItem ? null : r?.escolha && Array.isArray(r.escolha.itens) ? r.escolha : Array.isArray(r?.opcoes) && r.opcoes.length ? { modo: "ate", max: 1, itens: r.opcoes } : null);
   $("e-ordem").value = r && !dup ? r.ordem : (Math.max(0, ...rows.map(x => x.ordem)) + 1);
   $("e-ativo").checked = r ? r.ativo : true;
   $("e-p").value = r ? +r.proteina : 0; $("e-g").value = r ? +r.gordura : 0; $("e-c").value = r ? +r.carboidrato : 0;
@@ -1080,7 +1080,7 @@ $("edit").addEventListener("submit", async e => {
   const num = id => Math.max(0, parseFloat($(id).value) || 0);
   const data = { nome, categoria: cat, descricao: isItem ? ($("e-desc").value.trim() || null) : null,
     ...(isItem ? (editing ? {} : { porcao: null }) : { porcao: $("e-porcao").value.trim() || null }),
-    ...(isItem ? { tamanhos: sizes, opcoes: readOpts(), escolha: readEsc(), adicionais: readAdds() } : {}),
+    ...(isItem ? { tamanhos: sizes, opcoes: [], escolha: readEsc(), adicionais: readAdds() } : {}),
     preco, ordem: editing && editing.categoria !== cat ? Math.max(0, ...rows.map(x => x.ordem)) + 1 : parseInt($("e-ordem").value, 10) || 0, ativo: $("e-ativo").checked, proteina: num("e-p"), gordura: num("e-g"), carboidrato: num("e-c") };
   $("e-save").disabled = true;
   try {
@@ -1124,36 +1124,23 @@ $("e-sizes").addEventListener("input", e => {
 });
 $("e-sizes").addEventListener("click", e => { if (e.target.classList.contains("cx")) { e.target.closest(".cell").remove(); syncPrice(); } });
 
-// Opções: sempre há uma célula "+ opção" vazia no fim; escrever nela cria a opção e abre outra embaixo.
-function optCell(v) {
+// Opções: "uma ou mais" ou "até X itens"; sempre há uma célula "+ opção" vazia no fim, e escrever nela abre outra embaixo.
+$("e-esc-max").innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => `<option value="${n}">${n} ${n === 1 ? "item" : "itens"}</option>`).join("");
+function escCell(v) {
   const el = document.createElement("div"); el.className = v === null ? "cell new" : "cell";
   el.innerHTML = `<input value="${esc(v || "")}" maxlength="60" placeholder="+ opção" aria-label="Opção">${v === null ? "" : `<button type="button" class="cx" aria-label="Remover opção">×</button>`}`;
   return el;
 }
-function renderOpts(list) { const box = $("e-opts"); box.innerHTML = ""; list.forEach(v => box.appendChild(optCell(v))); box.appendChild(optCell(null)); }
-$("e-opts").addEventListener("input", e => {
-  const cell = e.target.closest(".cell"); if (!cell || !cell.classList.contains("new") || !e.target.value.trim()) return;
-  cell.classList.remove("new"); cell.insertAdjacentHTML("beforeend", `<button type="button" class="cx" aria-label="Remover opção">×</button>`);
-  $("e-opts").appendChild(optCell(null));
-});
-$("e-opts").addEventListener("click", e => { if (e.target.classList.contains("cx")) e.target.closest(".cell").remove(); });
-// Escolha: "uma ou mais" ou "até X itens", com células que se repetem como as opções.
-$("e-esc-max").innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => `<option value="${n}">${n} ${n === 1 ? "item" : "itens"}</option>`).join("");
-function escCell(v) {
-  const el = document.createElement("div"); el.className = v === null ? "cell new" : "cell";
-  el.innerHTML = `<input value="${esc(v || "")}" maxlength="60" placeholder="+ item" aria-label="Item da escolha">${v === null ? "" : `<button type="button" class="cx" aria-label="Remover item">×</button>`}`;
-  return el;
-}
 function renderEsc(e) {
   $("e-esc-modo").value = e && e.modo === "ate" ? "ate" : "varios";
-  $("e-esc-max").value = String(e && e.max ? e.max : 2);
+  $("e-esc-max").value = String(e && e.max ? e.max : 1);
   $("e-esc-max").hidden = $("e-esc-modo").value !== "ate";
   const box = $("e-esc"); box.innerHTML = ""; (e ? e.itens : []).forEach(v => box.appendChild(escCell(v))); box.appendChild(escCell(null));
 }
 $("e-esc-modo").addEventListener("change", () => { $("e-esc-max").hidden = $("e-esc-modo").value !== "ate"; });
 $("e-esc").addEventListener("input", e => {
   const cell = e.target.closest(".cell"); if (!cell || !cell.classList.contains("new") || !e.target.value.trim()) return;
-  cell.classList.remove("new"); cell.insertAdjacentHTML("beforeend", `<button type="button" class="cx" aria-label="Remover item">×</button>`);
+  cell.classList.remove("new"); cell.insertAdjacentHTML("beforeend", `<button type="button" class="cx" aria-label="Remover opção">×</button>`);
   $("e-esc").appendChild(escCell(null));
 });
 $("e-esc").addEventListener("click", e => { if (e.target.classList.contains("cx")) e.target.closest(".cell").remove(); });
@@ -1173,7 +1160,6 @@ function addCell(a) {
 function renderAdds(list) { $("e-adds").innerHTML = ""; list.forEach(addCell); }
 $("e-add-new").addEventListener("click", () => addCell(null).querySelector("input").focus());
 $("e-adds").addEventListener("click", e => { if (e.target.classList.contains("cx")) e.target.closest(".cell").remove(); });
-const readOpts = () => [...$("e-opts").querySelectorAll("input")].map(i => i.value.trim()).filter(Boolean);
 const readAdds = () => [...$("e-adds").querySelectorAll(".cell")].map(c => ({ nome: c.querySelector(".n").value.trim(), valor: Math.max(0, parseFloat(c.querySelector(".v").value) || 0) })).filter(a => a.nome);
 
 /* ---------- sugerir macros ---------- */

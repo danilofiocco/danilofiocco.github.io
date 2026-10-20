@@ -675,15 +675,15 @@ function closeOverlay(id) {
 let dishSel = null;
 function openDish(d, card) {
   const sizes = d.tamanhos || [];
-  dishSel = { d, card, tamanho: sizes[0] || null, opcao: (d.opcoes || [])[0] || "", escolhas: [], adds: {}, obs: "" };
+  dishSel = { d, card, tamanho: sizes[0] || null, opcao: (d.opcoes || [])[0] || "", escolhas: d.escolha ? [d.escolha.itens[0]] : [], adds: {}, obs: "" };
   document.getElementById("d-title").textContent = d.name;
   document.getElementById("d-desc").textContent = d.desc || "";
   const opts = d.opcoes || [], adds = d.adicionais || [];
   document.getElementById("d-list").innerHTML = `
     ${sizes.length ? `<div class="d-sec"><h3>Tamanho</h3>${sizes.map((t, i) => `
       <label class="d-opt"><input type="radio" name="d-size" value="${i}"${i ? "" : " checked"}> <span class="d-opt-n">${esc(t.nome)}</span><b class="d-opt-p">${brl.format(t.valor)}</b></label>`).join("")}</div>` : ""}
-    ${d.escolha ? `<div class="d-sec"><h3>Escolha<small>${d.escolha.modo === "ate" ? `até ${d.escolha.max} ${d.escolha.max === 1 ? "item" : "itens"}` : "uma ou mais"}</small></h3>${d.escolha.itens.map((o, i) => `
-      <label class="d-opt"><input type="checkbox" name="d-esc" value="${i}"> ${esc(o)}</label>`).join("")}</div>` : ""}
+    ${d.escolha ? `<div class="d-sec"><h3>${d.escolha.modo === "ate" && d.escolha.max === 1 ? "Escolha uma opção" : `Opções<small>${d.escolha.modo === "ate" ? `até ${d.escolha.max}` : "uma ou mais"}</small>`}</h3>${d.escolha.itens.map((o, i) => `
+      <label class="d-opt"><input type="${d.escolha.modo === "ate" && d.escolha.max === 1 ? "radio" : "checkbox"}" name="d-esc" value="${i}"${i ? "" : " checked"}> ${esc(o)}</label>`).join("")}</div>` : ""}
     ${opts.length ? `<div class="d-sec"><h3>Escolha uma opção</h3>${opts.map((o, i) => `
       <label class="d-opt"><input type="radio" name="d-opt" value="${i}"${i ? "" : " checked"}> ${esc(o)}</label>`).join("")}</div>` : ""}
     ${adds.length ? `<div class="d-sec"><h3>Adicionais</h3>${adds.map((a, i) => `
@@ -723,7 +723,7 @@ document.getElementById("d-list").addEventListener("change", e => {
     const e2 = dishSel.d.escolha, boxes = [...document.querySelectorAll("input[name=d-esc]")];
     dishSel.escolhas = boxes.filter(b => b.checked).map(b => e2.itens[+b.value]);
     // No "até X", as caixas que sobram travam quando o limite é atingido.
-    if (e2.modo === "ate") boxes.forEach(b => { b.disabled = !b.checked && dishSel.escolhas.length >= e2.max; b.closest(".d-opt").classList.toggle("off", b.disabled); });
+    if (e2.modo === "ate" && e2.max > 1) boxes.forEach(b => { b.disabled = !b.checked && dishSel.escolhas.length >= e2.max; b.closest(".d-opt").classList.toggle("off", b.disabled); });
     document.getElementById("d-msg").textContent = "";
   }
   if (e.target.name === "d-opt") { dishSel.opcao = (dishSel.d.opcoes || [])[+e.target.value] || ""; document.getElementById("d-msg").textContent = ""; }
@@ -731,7 +731,7 @@ document.getElementById("d-list").addEventListener("change", e => {
 function addDish() {
   const { d, card } = dishSel;
   if ((d.opcoes || []).length && !dishSel.opcao) { document.getElementById("d-msg").textContent = "Escolha uma opção para continuar."; return; }
-  if (d.escolha && d.escolha.modo === "varios" && !dishSel.escolhas.length) { document.getElementById("d-msg").textContent = "Marque pelo menos um item em Escolha."; return; }
+  if (d.escolha && d.escolha.modo === "varios" && !dishSel.escolhas.length) { document.getElementById("d-msg").textContent = "Marque pelo menos uma opção."; return; }
   const cfg = { dish: d.id, ...(dishSel.tamanho ? { tamanho: { nome: dishSel.tamanho.nome, valor: dishSel.tamanho.valor } } : {}), opcao: dishSel.opcao, ...(dishSel.escolhas.length ? { escolhas: dishSel.escolhas } : {}),
     adds: (d.adicionais || []).map((a, i) => ({ nome: a.nome, valor: +a.valor || 0, qtd: dishSel.adds[i] || 0 })).filter(a => a.qtd > 0),
     obs: document.getElementById("d-obs").value.trim() };
@@ -896,8 +896,10 @@ async function loadFromSupabase() {
     const mac = x => [+x.proteina, +x.gordura, +x.carboidrato];
     const items = rows.filter(x => x.tipo === "item").map(x => ({ id: x.id, cat: x.categoria, name: x.nome, desc: x.descricao || "", price: +x.preco, weight: x.porcao || "", foto: x.foto_url || "", macros: mac(x),
       tamanhos: Array.isArray(x.tamanhos) ? x.tamanhos.filter(t => t && t.nome).map(t => ({ nome: t.nome, valor: +t.valor || 0 })) : [],
-      escolha: x.escolha && Array.isArray(x.escolha.itens) && x.escolha.itens.length ? { modo: x.escolha.modo === "ate" ? "ate" : "varios", max: +x.escolha.max || 0, itens: x.escolha.itens.filter(Boolean) } : null,
-      opcoes: Array.isArray(x.opcoes) ? x.opcoes.filter(Boolean) : [], adicionais: Array.isArray(x.adicionais) ? x.adicionais.filter(a => a && a.nome) : [] }));
+      // Opções: "uma ou mais" ou "até X"; a lista simples antiga vale como "até 1".
+      escolha: x.escolha && Array.isArray(x.escolha.itens) && x.escolha.itens.length ? { modo: x.escolha.modo === "ate" ? "ate" : "varios", max: Math.max(1, +x.escolha.max || 1), itens: x.escolha.itens.filter(Boolean) }
+        : Array.isArray(x.opcoes) && x.opcoes.filter(Boolean).length ? { modo: "ate", max: 1, itens: x.opcoes.filter(Boolean) } : null,
+      opcoes: [], adicionais: Array.isArray(x.adicionais) ? x.adicionais.filter(a => a && a.nome) : [] }));
     const groups = [];
     rows.filter(x => x.tipo === "ingrediente").forEach(x => {
       let g = groups.find(g => g.group === x.categoria);
