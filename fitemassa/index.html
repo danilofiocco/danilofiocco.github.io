@@ -13,16 +13,16 @@
   --brand: #214b3d; --brand-gold: #c6a15b; --brand-cream: #f2ece0;
   --bg: #f5f4ef; --surface: #ffffff; --ink: #1b2e27; --muted: #5d6c64;
   --line: #e0ddd2; --accent: #214b3d; --accent-ink: #ffffff; --warm: #c6a15b; --hl: #f0e3c2; --closed: #b3261e;
-  --m-prot: #2f7a5c; --m-carb: #d4a64a; --m-fat: #b5654a;
+  --m-prot: #2f7a5c; --m-carb: #d4a64a; --m-fat: #b5654a; --gold-text: #9a7531;
   --display: "Marcellus", "Palatino Linotype", Georgia, serif;
   --body: "Nunito Sans", "Segoe UI", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0f1c17; --surface: #172a22; --ink: #ece7dc; --muted: #a3b2aa;
-  --line: #2a3f35; --accent: #d1b06c; --accent-ink: #14231d; --warm: #d1b06c; --hl: #3d3420; --m-prot: #5fb38c; --m-carb: #e0b964; --m-fat: #d98468; color-scheme: dark } }
+  --line: #2a3f35; --accent: #d1b06c; --accent-ink: #14231d; --warm: #d1b06c; --hl: #3d3420; --m-prot: #5fb38c; --m-carb: #e0b964; --m-fat: #d98468; --gold-text: #d9b670; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0f1c17; --surface: #172a22; --ink: #ece7dc; --muted: #a3b2aa;
-  --line: #2a3f35; --accent: #d1b06c; --accent-ink: #14231d; --warm: #d1b06c; --hl: #3d3420; --m-prot: #5fb38c; --m-carb: #e0b964; --m-fat: #d98468; color-scheme: dark }
+  --line: #2a3f35; --accent: #d1b06c; --accent-ink: #14231d; --warm: #d1b06c; --hl: #3d3420; --m-prot: #5fb38c; --m-carb: #e0b964; --m-fat: #d98468; --gold-text: #d9b670; color-scheme: dark }
 * { box-sizing: border-box }
 [hidden] { display: none !important }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.5 }
@@ -70,7 +70,9 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 .build-note { margin: 0; font-size: 13.5px; color: var(--muted); text-align: center }
 .build-or { margin: 4px 0 0; text-align: center; color: var(--muted); font-size: 14px; display: flex; align-items: center; gap: 12px }
 .build-or::before, .build-or::after { content: ""; flex: 1; height: 1px; background: var(--line) }
-.menu { display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--line) }
+.menu { display: flex; flex-direction: column; gap: 0; border-top: 2px solid var(--brand-gold) }
+/* Títulos das categorias: maiores e dourados, com a linha dourada logo abaixo (como as seções do admin) */
+.category > h2 { font-size: 26px; color: var(--gold-text); margin-bottom: 10px }
 .dish { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding-block: 18px; border-bottom: 1px solid var(--line) }
 .plate { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center;
   background: var(--surface); border: 2px dashed var(--line); font-family: var(--display); font-weight: 400; font-size: 22px; color: var(--accent) }
