@@ -137,7 +137,9 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 }
 @media (prefers-reduced-motion: reduce) { .handle svg { transition: none } }
 .dish { position: relative; isolation: isolate }
-.featured h2::before { content: "★ "; color: var(--warm) }
+/* Destaques sem título visível (fica só para leitores de tela) */
+.featured h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }
+.featured .feat-grid { margin-top: 0 }
 .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-top: 10px }
 /* No celular, Destaques em carrossel: o primeiro inteiro e um pedaço do próximo; arrasta e encaixa em cada cartão */
 @media (max-width: 640px) {
