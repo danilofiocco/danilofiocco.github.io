@@ -454,15 +454,16 @@ function configItem(id) {
   const c = configs[id]; if (!c) return null;
   const d = DISHES.find(x => x.id === c.dish); if (!d) return null;
   const adds = (c.adds || []).filter(a => a.qtd > 0);
-  const base = c.tamanho ? +c.tamanho.valor || 0 : d.price;
+  const base = (c.tamanho ? +c.tamanho.valor || 0 : d.price) + (c.variante ? +c.variante.valor || 0 : 0);
   const price = Math.round((base + adds.reduce((s, a) => s + a.valor * a.qtd, 0)) * 100) / 100;
   const parts = [];
   if (c.tamanho) parts.push(c.tamanho.nome);
+  if (c.variante) parts.push(c.variante.nome);
   if ((c.escolhas || []).length) parts.push(c.escolhas.join(", "));
   if (c.opcao) parts.push(c.opcao);
   if (adds.length) parts.push(adds.map(a => `${a.qtd > 1 ? a.qtd + "x " : "+ "}${a.nome}`).join(", "));
   if (c.obs) parts.push(`Obs.: ${c.obs}`);
-  return { ...d, id, cfg: true, dish: d.id, tamanho: c.tamanho ? c.tamanho.nome : "", opcao: c.opcao || "", escolhas: c.escolhas || [], adds, obs: c.obs || "", price, detail: parts.join(" · ") };
+  return { ...d, id, cfg: true, dish: d.id, tamanho: c.tamanho ? c.tamanho.nome : "", variante: c.variante ? c.variante.nome : "", opcao: c.opcao || "", escolhas: c.escolhas || [], adds, obs: c.obs || "", price, detail: parts.join(" · ") };
 }
 const byId = id => DISHES.find(d => d.id === id) || plateItem(id) || configItem(id);
 
@@ -613,7 +614,7 @@ document.addEventListener("click", e => {
   }
   else if (t.dataset.add && !closed) {
     const d = DISHES.find(x => x.id === t.dataset.add);
-    if (d && ((d.tamanhos || []).length || (d.opcoes || []).length || d.escolha || (d.adicionais || []).length)) openDish(d, t.closest(".dish"));
+    if (d && ((d.tamanhos || []).length || (d.variantes || []).length || (d.opcoes || []).length || d.escolha || (d.adicionais || []).length)) openDish(d, t.closest(".dish"));
     else { flash(t.closest(".dish")); fly(t.closest(".dish").querySelector(".plate")); setQty(t.dataset.add, (cart[t.dataset.add] || 0) + 1); }
   }
   else if (t.id === "d-close") closeOverlay("d-overlay");
@@ -642,7 +643,7 @@ async function saveOrder() {
   const order = {
     nome: val("nome"), entrega,
     itens: lines.map(l => ({ nome: l.d.name, qtd: l.q, preco: l.d.price, ...(l.d.custom ? { detalhe: plateDetail(l.d) } : {}),
-      ...(l.d.cfg ? { ...(l.d.detail ? { detalhe: l.d.detail } : {}), ...(l.d.tamanho ? { tamanho: l.d.tamanho } : {}), ...(l.d.opcao ? { opcao: l.d.opcao } : {}), ...(l.d.escolhas.length ? { escolhas: l.d.escolhas } : {}),
+      ...(l.d.cfg ? { ...(l.d.detail ? { detalhe: l.d.detail } : {}), ...(l.d.tamanho ? { tamanho: l.d.tamanho } : {}), ...(l.d.variante ? { variante: l.d.variante } : {}), ...(l.d.opcao ? { opcao: l.d.opcao } : {}), ...(l.d.escolhas.length ? { escolhas: l.d.escolhas } : {}),
         ...(l.d.adds.length ? { adicionais: l.d.adds.map(a => ({ nome: a.nome, qtd: a.qtd, valor: a.valor })) } : {}), ...(l.d.obs ? { obs: l.d.obs } : {}) } : {}) })),
     pratos: lines.reduce((n, l) => n + l.q, 0),
     total: Math.round(lines.reduce((s, l) => s + l.q * l.d.price, 0) * 100) / 100
@@ -675,13 +676,15 @@ function closeOverlay(id) {
 let dishSel = null;
 function openDish(d, card) {
   const sizes = d.tamanhos || [];
-  dishSel = { d, card, tamanho: sizes[0] || null, opcao: (d.opcoes || [])[0] || "", escolhas: d.escolha ? [d.escolha.itens[0]] : [], adds: {}, obs: "" };
+  dishSel = { d, card, tamanho: sizes[0] || null, variante: (d.variantes || [])[0] || null, opcao: (d.opcoes || [])[0] || "", escolhas: d.escolha ? [d.escolha.itens[0]] : [], adds: {}, obs: "" };
   document.getElementById("d-title").textContent = d.name;
   document.getElementById("d-desc").textContent = d.desc || "";
   const opts = d.opcoes || [], adds = d.adicionais || [];
   document.getElementById("d-list").innerHTML = `
     ${sizes.length ? `<div class="d-sec"><h3>Tamanho</h3>${sizes.map((t, i) => `
       <label class="d-opt"><input type="radio" name="d-size" value="${i}"${i ? "" : " checked"}> <span class="d-opt-n">${esc(t.nome)}</span><b class="d-opt-p">${brl.format(t.valor)}</b></label>`).join("")}</div>` : ""}
+    ${(d.variantes || []).length ? `<div class="d-sec"><h3>Escolha</h3>${d.variantes.map((v, i) => `
+      <label class="d-opt"><input type="radio" name="d-var" value="${i}"${i ? "" : " checked"}> <span class="d-opt-n">${esc(v.nome)}</span>${v.valor ? `<b class="d-opt-p">+ ${brl.format(v.valor)}</b>` : ""}</label>`).join("")}</div>` : ""}
     ${d.escolha ? `<div class="d-sec"><h3>${d.escolha.modo === "ate" && d.escolha.max === 1 ? "Escolha uma opção" : `Opções<small>${d.escolha.modo === "ate" ? `até ${d.escolha.max}` : "uma ou mais"}</small>`}</h3>${d.escolha.itens.map((o, i) => `
       <label class="d-opt"><input type="${d.escolha.modo === "ate" && d.escolha.max === 1 ? "radio" : "checkbox"}" name="d-esc" value="${i}"${i ? "" : " checked"}> ${esc(o)}</label>`).join("")}</div>` : ""}
     ${opts.length ? `<div class="d-sec"><h3>Escolha uma opção</h3>${opts.map((o, i) => `
@@ -704,7 +707,7 @@ function openDish(d, card) {
 }
 function dishPrice() {
   const { d, adds, tamanho } = dishSel;
-  return (tamanho ? tamanho.valor : d.price) + (d.adicionais || []).reduce((s, a, i) => s + (+a.valor || 0) * (adds[i] || 0), 0);
+  return (tamanho ? tamanho.valor : d.price) + (dishSel.variante ? dishSel.variante.valor : 0) + (d.adicionais || []).reduce((s, a, i) => s + (+a.valor || 0) * (adds[i] || 0), 0);
 }
 function renderDish() {
   const { d, adds } = dishSel;
@@ -718,6 +721,7 @@ function renderDish() {
   document.getElementById("d-add").disabled = closed;
 }
 document.getElementById("d-list").addEventListener("change", e => {
+  if (e.target.name === "d-var") { dishSel.variante = (dishSel.d.variantes || [])[+e.target.value] || null; renderDish(); }
   if (e.target.name === "d-size") { dishSel.tamanho = (dishSel.d.tamanhos || [])[+e.target.value] || null; renderDish(); }
   if (e.target.name === "d-esc") {
     const e2 = dishSel.d.escolha, boxes = [...document.querySelectorAll("input[name=d-esc]")];
@@ -732,7 +736,7 @@ function addDish() {
   const { d, card } = dishSel;
   if ((d.opcoes || []).length && !dishSel.opcao) { document.getElementById("d-msg").textContent = "Escolha uma opção para continuar."; return; }
   if (d.escolha && d.escolha.modo === "varios" && !dishSel.escolhas.length) { document.getElementById("d-msg").textContent = "Marque pelo menos uma opção."; return; }
-  const cfg = { dish: d.id, ...(dishSel.tamanho ? { tamanho: { nome: dishSel.tamanho.nome, valor: dishSel.tamanho.valor } } : {}), opcao: dishSel.opcao, ...(dishSel.escolhas.length ? { escolhas: dishSel.escolhas } : {}),
+  const cfg = { dish: d.id, ...(dishSel.tamanho ? { tamanho: { nome: dishSel.tamanho.nome, valor: dishSel.tamanho.valor } } : {}), ...(dishSel.variante ? { variante: { nome: dishSel.variante.nome, valor: dishSel.variante.valor } } : {}), opcao: dishSel.opcao, ...(dishSel.escolhas.length ? { escolhas: dishSel.escolhas } : {}),
     adds: (d.adicionais || []).map((a, i) => ({ nome: a.nome, valor: +a.valor || 0, qtd: dishSel.adds[i] || 0 })).filter(a => a.qtd > 0),
     obs: document.getElementById("d-obs").value.trim() };
   // A mesma combinação soma na linha que já existe.
@@ -896,6 +900,7 @@ async function loadFromSupabase() {
     const mac = x => [+x.proteina, +x.gordura, +x.carboidrato];
     const items = rows.filter(x => x.tipo === "item").map(x => ({ id: x.id, cat: x.categoria, name: x.nome, desc: x.descricao || "", price: +x.preco, weight: x.porcao || "", foto: x.foto_url || "", macros: mac(x),
       tamanhos: Array.isArray(x.tamanhos) ? x.tamanhos.filter(t => t && t.nome).map(t => ({ nome: t.nome, valor: +t.valor || 0 })) : [],
+      variantes: Array.isArray(x.variantes) ? x.variantes.filter(v => v && v.nome).map(v => ({ nome: v.nome, valor: +v.valor || 0 })) : [],
       // Opções: "uma ou mais" ou "até X"; a lista simples antiga vale como "até 1".
       escolha: x.escolha && Array.isArray(x.escolha.itens) && x.escolha.itens.length ? { modo: x.escolha.modo === "ate" ? "ate" : "varios", max: Math.max(1, +x.escolha.max || 1), itens: x.escolha.itens.filter(Boolean) }
         : Array.isArray(x.opcoes) && x.opcoes.filter(Boolean).length ? { modo: "ate", max: 1, itens: x.opcoes.filter(Boolean) } : null,
