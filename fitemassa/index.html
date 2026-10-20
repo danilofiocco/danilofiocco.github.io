@@ -458,8 +458,8 @@ function configItem(id) {
   const price = Math.round((base + adds.reduce((s, a) => s + a.valor * a.qtd, 0)) * 100) / 100;
   const parts = [];
   if (c.tamanho) parts.push(c.tamanho.nome);
-  if (c.opcao) parts.push(c.opcao);
   if ((c.escolhas || []).length) parts.push(c.escolhas.join(", "));
+  if (c.opcao) parts.push(c.opcao);
   if (adds.length) parts.push(adds.map(a => `${a.qtd > 1 ? a.qtd + "x " : "+ "}${a.nome}`).join(", "));
   if (c.obs) parts.push(`Obs.: ${c.obs}`);
   return { ...d, id, cfg: true, dish: d.id, tamanho: c.tamanho ? c.tamanho.nome : "", opcao: c.opcao || "", escolhas: c.escolhas || [], adds, obs: c.obs || "", price, detail: parts.join(" · ") };
@@ -682,10 +682,10 @@ function openDish(d, card) {
   document.getElementById("d-list").innerHTML = `
     ${sizes.length ? `<div class="d-sec"><h3>Tamanho</h3>${sizes.map((t, i) => `
       <label class="d-opt"><input type="radio" name="d-size" value="${i}"${i ? "" : " checked"}> <span class="d-opt-n">${esc(t.nome)}</span><b class="d-opt-p">${brl.format(t.valor)}</b></label>`).join("")}</div>` : ""}
-    ${opts.length ? `<div class="d-sec"><h3>Escolha uma opção</h3>${opts.map((o, i) => `
-      <label class="d-opt"><input type="radio" name="d-opt" value="${i}"${i ? "" : " checked"}> ${esc(o)}</label>`).join("")}</div>` : ""}
     ${d.escolha ? `<div class="d-sec"><h3>Escolha<small>${d.escolha.modo === "ate" ? `até ${d.escolha.max} ${d.escolha.max === 1 ? "item" : "itens"}` : "uma ou mais"}</small></h3>${d.escolha.itens.map((o, i) => `
       <label class="d-opt"><input type="checkbox" name="d-esc" value="${i}"> ${esc(o)}</label>`).join("")}</div>` : ""}
+    ${opts.length ? `<div class="d-sec"><h3>Escolha uma opção</h3>${opts.map((o, i) => `
+      <label class="d-opt"><input type="radio" name="d-opt" value="${i}"${i ? "" : " checked"}> ${esc(o)}</label>`).join("")}</div>` : ""}
     ${adds.length ? `<div class="d-sec"><h3>Adicionais</h3>${adds.map((a, i) => `
       <div class="b-row" id="dr-${i}">
         <span class="b-name">${esc(a.nome)}<span class="b-sub">+ ${brl.format(+a.valor || 0)}</span></span>
