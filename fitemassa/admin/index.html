@@ -252,6 +252,7 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 .sect .flabel { font-family: var(--display); font-weight: 400; font-size: 19px; color: var(--gold-text) }
 .sect .flabel small, .sect .esc-hint { font-family: var(--body); font-size: 12px; color: var(--muted) }
 .esc-hint { color: var(--muted); font-size: 12px }
+.check.usa { font-size: 13px; gap: 6px; cursor: pointer }
 .tal-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-height: 42px }
 #e-tal-v { width: 160px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font: inherit }
 #e-esc-f .esc-head select { width: auto; flex: none; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font: inherit; font-size: 14px }
@@ -340,7 +341,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     <nav class="nav" id="nav" hidden aria-label="Seções">
       <button data-view="pedidos" aria-current="true"><svg class="i"><use href="#i-ticket"/></svg>Pedidos <span id="ped-count">(0)</span></button>
       <button data-view="item" aria-current="false">Cardápio</button>
-      <button data-view="ingrediente" aria-current="false">Monte seu Prato</button>
+      <button data-view="ingrediente" aria-current="false">Monte seu prato/salada</button>
       <button data-view="horario" aria-current="false"><svg class="i"><use href="#i-clock"/></svg>Horários<span class="state" id="state" hidden></span></button>
       <button data-view="compras" aria-current="false"><svg class="i"><use href="#i-cart"/></svg>Lista de compras</button>
       <button data-view="config" aria-current="false"><svg class="i"><use href="#i-gear"/></svg>Configurações</button>
@@ -389,7 +390,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
   <section id="v-compras" hidden>
     <div class="bar"><h2>Lista de compras</h2><span class="msg" id="shop-count"></span><button type="button" class="btn ghost small" id="shop-clear">Desmarcar todos</button></div>
-    <p class="msg">Tudo o que aparece nas descrições, opções e adicionais dos itens visíveis e nos ingredientes do Monte seu Prato. As marcações ficam salvas neste aparelho.</p>
+    <p class="msg">Tudo o que aparece nas descrições, opções e adicionais dos itens visíveis e nos ingredientes do Monte seu prato/salada. As marcações ficam salvas neste aparelho.</p>
     <div id="shop-list"></div>
     <form class="shop-add" id="shop-add"><input id="shop-new" maxlength="60" placeholder="Faltou algo? Escreva aqui" aria-label="Novo item da lista"><button class="btn small">Adicionar</button></form>
   </section>
@@ -601,7 +602,7 @@ function show(v) {
   try { localStorage.setItem("fm-admin-tela", v); } catch (e) {} // ao recarregar, volta para esta tela
   document.querySelectorAll("#nav button").forEach(b => b.setAttribute("aria-current", b.dataset.view === v));
   $("v-list").hidden = v !== "item" && v !== "ingrediente"; $("v-hours").hidden = v !== "horario"; $("v-config").hidden = v !== "config"; $("v-compras").hidden = v !== "compras"; $("v-orders").hidden = v !== "pedidos";
-  $("list-title").textContent = v === "item" ? "Cardápio" : "Monte seu Prato";
+  $("list-title").textContent = v === "item" ? "Cardápio" : "Monte seu prato/salada";
   renderList(); if (v === "pedidos") renderOrders(); if (v === "compras") renderShop();
   document.body.classList.toggle("wide", v === "pedidos");
 }
@@ -655,7 +656,7 @@ function shopList() {
     if (rest && !/^(sem|com|nenhum|carne (ao|mal|bem))\b/i.test(rest)) add(rest.replace(/\s+/g, " "), "Outros", onde);
   };
   live().filter(r => r.ativo).forEach(r => {
-    const onde = r.tipo === "item" ? r.nome.replace(/\s+/g, " ").trim() : "Monte seu Prato";
+    const onde = r.tipo === "item" ? r.nome.replace(/\s+/g, " ").trim() : "Monte seu prato/salada";
     if (r.tipo === "ingrediente") scan(r.nome, onde, true);
     else (r.descricao || "").split(/[,.;\n]| e (?=[a-zà-ú])/i).forEach(p => scan(p, onde, false));
     (Array.isArray(r.opcoes) ? r.opcoes : []).forEach(o => scan(o, onde, true));
@@ -761,6 +762,8 @@ function renderList() {
           <button class="btn ghost small" data-dup="${esc(r.id)}">${icon("copy")}Duplicar</button>
           <button class="btn ghost small" data-edit="${esc(r.id)}">${icon("pen")}Editar</button>
           <button class="btn ghost small" data-del="${esc(r.id)}">${icon("trash")}Excluir</button>
+          ${r.tipo === "ingrediente" ? `<label class="check usa"><input type="checkbox" data-usa="em_prato" data-id="${esc(r.id)}" ${r.em_prato !== false ? "checked" : ""}> Prato</label>
+          <label class="check usa"><input type="checkbox" data-usa="em_salada" data-id="${esc(r.id)}" ${r.em_salada ? "checked" : ""}> Salada</label>` : ""}
           <label class="switch"><input type="checkbox" data-vis="${esc(r.id)}" ${r.ativo ? "checked" : ""}><span class="track"></span>Visível no site</label>
         </div>
       </div>`).join("")}</div>`;
@@ -768,7 +771,7 @@ function renderList() {
 }
 
 /* ---------- lixeira ---------- */
-const T_FILTERS = [["todos", "Todos"], ["item", "Cardápio"], ["ingrediente", "Monte seu Prato"]];
+const T_FILTERS = [["todos", "Todos"], ["item", "Cardápio"], ["ingrediente", "Monte seu prato/salada"]];
 const trashShown = () => trashed().filter(r => tFilter === "todos" || r.tipo === tFilter);
 function renderTrash() {
   const all = trashed(), list = trashShown();
@@ -1000,6 +1003,13 @@ document.addEventListener("click", async e => {
 function closeTrash() { $("tv").hidden = true; document.body.style.overflow = ""; trashConfirm = null; }
 $("tv").addEventListener("click", e => { if (e.target.id === "tv") closeTrash(); });
 
+// Ingredientes: em qual montador do site aparecem (Monte seu prato / Monte sua salada).
+document.addEventListener("change", async e => {
+  const cb = e.target; if (!cb.dataset || !cb.dataset.usa) return;
+  const id = cb.dataset.id, campo = cb.dataset.usa, on = cb.checked; cb.disabled = true;
+  try { const row = await patchRow(id, { [campo]: on }); renderList(); toast(`${row.nome} ${on ? "aparece" : "sai"} no Monte ${campo === "em_prato" ? "seu prato" : "sua salada"}`); }
+  catch (err) { cb.checked = !on; cb.disabled = false; toast("Não foi possível alterar: " + err.message); }
+});
 document.addEventListener("change", async e => {
   const cb = e.target; if (!cb.dataset || !cb.dataset.vis) return;
   const id = cb.dataset.vis, ativo = cb.checked; cb.disabled = true;

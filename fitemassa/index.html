@@ -57,6 +57,9 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0
 .build-btn { font: inherit; display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 14px 20px; border: 0; border-radius: 14px; cursor: pointer;
   background: var(--brand); color: var(--brand-cream); font-family: var(--display); font-size: 21px; box-shadow: inset 0 0 0 2px var(--brand-gold) }
 .build-btn:hover { filter: brightness(1.12) }
+.build-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 10px }
+.build-row:has(> [hidden]) { grid-template-columns: 1fr }
+@media (max-width: 520px) { .build-row .build-btn { font-size: 17px; padding: 12px 10px; gap: 8px } .build-row .build-btn svg { width: 22px; height: 22px } }
 .build-btn svg { width: 26px; height: 26px; color: var(--brand-gold); flex: none }
 .build-note { margin: 0; font-size: 13.5px; color: var(--muted); text-align: center }
 .build-or { margin: 4px 0 0; text-align: center; color: var(--muted); font-size: 14px; display: flex; align-items: center; gap: 12px }
@@ -249,7 +252,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
     <section aria-label="Cardápio">
       <div class="stick" id="stick">
         <div class="build">
-          <button class="build-btn" id="build-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="10.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>Monte seu Prato</button>
+          <div class="build-row"><button class="build-btn" id="build-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="10.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>Monte seu Prato</button><button class="build-btn" id="build-salada" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="10.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>Monte sua Salada</button></div>
           <p class="build-or">Ou escolha um dos pratos abaixo</p>
         </div>
         <nav class="cats" id="cats" aria-label="Categorias"></nav>
@@ -425,7 +428,7 @@ const INGREDIENTS = [
     ["picles", "Picles", "30 g", 1.5, [0, 0, 1]] ] }
 ];
 const ING = {};
-INGREDIENTS.forEach(g => g.items.forEach(([id, name, portion, price, macros, foto]) => ING[id] = { id, name, portion, price, macros, foto: foto || "" }));
+INGREDIENTS.forEach(g => g.items.forEach(([id, name, portion, price, macros, foto, prato, salada]) => ING[id] = { id, name, portion, price, macros, foto: foto || "", prato: prato !== false, salada: !!salada }));
 const PKEY = "fit-massa-meus-pratos";
 let plates = {};
 try { plates = JSON.parse(localStorage.getItem(PKEY)) || {}; } catch (e) { plates = {}; }
@@ -440,7 +443,7 @@ function plateStats(ings) {
 function plateItem(id) {
   const p = plates[id]; if (!p) return null;
   const st = plateStats(p);
-  return st.ids.length ? { id, name: "Meu Prato", custom: true, ings: p, ids: st.ids, price: Math.round(st.price * 100) / 100, macros: st.macros } : null;
+  return st.ids.length ? { id, name: p.__k === "salada" ? "Minha Salada" : "Meu Prato", custom: true, ings: p, ids: st.ids, price: Math.round(st.price * 100) / 100, macros: st.macros } : null;
 }
 const ingText = (d, i) => `${d.ings[i] > 1 ? d.ings[i] + "x " : ""}${ING[i].name}`;
 const plateDetail = d => d.ids.map(i => ingText(d, i)).join(", ");
@@ -523,6 +526,7 @@ function markCategory() {
 addEventListener("scroll", markCategory, { passive: true });
 
 function render() {
+  document.getElementById("build-salada").hidden = !Object.values(ING).some(i => i.salada);
   const ids = Object.keys(cart).filter(byId);
   const items = ids.reduce((n, id) => n + cart[id], 0);
   const subtotal = ids.reduce((s, id) => s + cart[id] * byId(id).price, 0);
@@ -602,7 +606,8 @@ function toggleCart() {
 
 document.addEventListener("click", e => {
   const t = e.target.closest("button"); if (!t) return;
-  if (t.id === "build-btn") openBuilder();
+  if (t.id === "build-btn") openBuilder("prato");
+  else if (t.id === "build-salada") openBuilder("salada");
   else if (t.id === "b-close") closeOverlay("b-overlay");
   else if (t.id === "i-close") closeOverlay("i-overlay");
   else if (t.dataset.binc) { building[t.dataset.binc] = Math.min(9, (building[t.dataset.binc] || 0) + 1); renderBuilder(); }
@@ -750,7 +755,11 @@ function addDish() {
   if (card) { flash(card); fly(card.querySelector(".plate")); }
   setQty(id, (cart[id] || 0) + 1);
 }
-function openBuilder() {
+// Dois montadores com as mesmas regras: "prato" e "salada"; cada ingrediente diz em quais aparece.
+let buildKind = "prato";
+function openBuilder(kind) {
+  buildKind = kind === "salada" ? "salada" : "prato";
+  document.getElementById("b-title").textContent = buildKind === "salada" ? "Monte sua Salada" : "Monte seu Prato";
   building = {};
   renderBuilderList();
   openOverlay("b-overlay");
@@ -758,7 +767,7 @@ function openBuilder() {
 }
 // Lista de ingredientes por categoria (as do admin, na ordem do admin); tocar numa categoria rola até ela.
 function renderBuilderList() {
-  const groups = INGREDIENTS.map(g => ({ group: g.group, ids: g.items.map(([id]) => id) }));
+  const groups = INGREDIENTS.map(g => ({ group: g.group, ids: g.items.map(([id]) => id).filter(id => ING[id] && ING[id][buildKind]) })).filter(g => g.ids.length);
   document.getElementById("b-cats").innerHTML = groups.map((g, i) =>
     `<button type="button" class="sort-chip" data-bcat="${i}" aria-pressed="${i === 0}">${g.group}</button>`).join("");
   document.getElementById("b-list").innerHTML = groups.map((g, gi) => `
@@ -789,8 +798,8 @@ document.getElementById("b-list").addEventListener("scroll", () => {
 }, { passive: true });
 function renderBuilder() {
   Object.keys(ING).forEach(id => {
-    const n = building[id] || 0;
-    document.getElementById("bq-" + id).value = n;
+    const n = building[id] || 0, q = document.getElementById("bq-" + id); if (!q) return;
+    q.value = n;
     document.getElementById("br-" + id).classList.toggle("on", n > 0);
   });
   const st = plateStats(building);
@@ -798,18 +807,19 @@ function renderBuilder() {
   document.getElementById("b-price").textContent = brl.format(st.price);
   document.getElementById("b-count").textContent = !portions ? "Nenhum ingrediente" : `${st.ids.length} ${st.ids.length === 1 ? "ingrediente" : "ingredientes"} · ${portions} ${portions === 1 ? "porção" : "porções"}`;
   document.getElementById("b-add").disabled = !st.ids.length || closed;
-  document.getElementById("b-add").textContent = closed ? "Estamos fechados no momento" : "Adicionar prato ao carrinho";
+  document.getElementById("b-add").textContent = closed ? "Estamos fechados no momento" : buildKind === "salada" ? "Adicionar salada ao carrinho" : "Adicionar prato ao carrinho";
 }
 function addPlate() {
   const st = plateStats(building); if (!st.ids.length || closed) return;
   const id = "meu-" + Date.now().toString(36);
-  plates[id] = { ...building }; savePlates();
+  plates[id] = { ...building, ...(buildKind === "salada" ? { __k: "salada" } : {}) }; savePlates();
   closeOverlay("b-overlay");
   setQty(id, 1);
   bump(mobile.matches ? document.querySelector(".summary-title") : document.getElementById("cart-title"));
 }
 function showIngredients(id) {
   const d = byId(id); if (!d) return;
+  document.getElementById("i-title").textContent = d.name === "Minha Salada" ? "Ingredientes da Minha Salada" : "Ingredientes do Meu Prato";
   document.getElementById("i-list").innerHTML = d.ids.map(i =>
     `<li><span>${d.ings[i]}x ${ING[i].name} <span class="b-sub">${ING[i].portion}</span></span><span>${brl.format(ING[i].price * d.ings[i])}</span></li>`).join("") +
     `<li><strong>Total</strong><strong>${brl.format(d.price)}</strong></li>`;
@@ -913,7 +923,7 @@ async function loadFromSupabase() {
     rows.filter(x => x.tipo === "ingrediente").forEach(x => {
       let g = groups.find(g => g.group === x.categoria);
       if (!g) groups.push(g = { group: x.categoria, items: [] });
-      g.items.push([x.id, x.nome, x.porcao || "", +x.preco, mac(x), x.foto_url || ""]);
+      g.items.push([x.id, x.nome, x.porcao || "", +x.preco, mac(x), x.foto_url || "", x.em_prato !== false, !!x.em_salada]);
     });
     if (kItem.length) CATEGORIES.splice(0, CATEGORIES.length, ...kItem.map(c => ({ id: c.id, name: c.nome })));
     items.forEach(d => { if (!CATEGORIES.some(c => c.id === d.cat)) CATEGORIES.push({ id: d.cat, name: d.cat.charAt(0).toUpperCase() + d.cat.slice(1) }); });
@@ -923,7 +933,7 @@ async function loadFromSupabase() {
     if (groups.length) {
       INGREDIENTS.splice(0, INGREDIENTS.length, ...groups);
       Object.keys(ING).forEach(k => delete ING[k]);
-      INGREDIENTS.forEach(g => g.items.forEach(([id, name, portion, price, macros, foto]) => ING[id] = { id, name, portion, price, macros, foto: foto || "" }));
+      INGREDIENTS.forEach(g => g.items.forEach(([id, name, portion, price, macros, foto, prato, salada]) => ING[id] = { id, name, portion, price, macros, foto: foto || "", prato: prato !== false, salada: !!salada }));
     }
     renderMenu(); render(); measureStick(); markCategory();
   } catch (e) { console.warn("Cardápio: não foi possível ler o Supabase, usando os dados embutidos.", e); }
