@@ -454,7 +454,7 @@ function configItem(id) {
   const c = configs[id]; if (!c) return null;
   const d = DISHES.find(x => x.id === c.dish); if (!d) return null;
   const adds = (c.adds || []).filter(a => a.qtd > 0);
-  const base = (c.tamanho ? +c.tamanho.valor || 0 : d.price) + (c.variante ? +c.variante.valor || 0 : 0);
+  const base = (c.tamanho ? +c.tamanho.valor || 0 : d.price) + (c.variante ? +c.variante.valor || 0 : 0) + (c.talheres ? +c.talheres.valor || 0 : 0);
   const price = Math.round((base + adds.reduce((s, a) => s + a.valor * a.qtd, 0)) * 100) / 100;
   const parts = [];
   if (c.tamanho) parts.push(c.tamanho.nome);
@@ -462,8 +462,9 @@ function configItem(id) {
   if ((c.escolhas || []).length) parts.push(c.escolhas.join(", "));
   if (c.opcao) parts.push(c.opcao);
   if (adds.length) parts.push(adds.map(a => `${a.qtd > 1 ? a.qtd + "x " : "+ "}${a.nome}`).join(", "));
+  if (c.talheres) parts.push("Com talheres");
   if (c.obs) parts.push(`Obs.: ${c.obs}`);
-  return { ...d, id, cfg: true, dish: d.id, tamanho: c.tamanho ? c.tamanho.nome : "", variante: c.variante ? c.variante.nome : "", opcao: c.opcao || "", escolhas: c.escolhas || [], adds, obs: c.obs || "", price, detail: parts.join(" · ") };
+  return { ...d, id, cfg: true, dish: d.id, tamanho: c.tamanho ? c.tamanho.nome : "", variante: c.variante ? c.variante.nome : "", talheres: !!c.talheres, opcao: c.opcao || "", escolhas: c.escolhas || [], adds, obs: c.obs || "", price, detail: parts.join(" · ") };
 }
 const byId = id => DISHES.find(d => d.id === id) || plateItem(id) || configItem(id);
 
@@ -614,7 +615,7 @@ document.addEventListener("click", e => {
   }
   else if (t.dataset.add && !closed) {
     const d = DISHES.find(x => x.id === t.dataset.add);
-    if (d && ((d.tamanhos || []).length || (d.variantes || []).length || (d.opcoes || []).length || d.escolha || (d.adicionais || []).length)) openDish(d, t.closest(".dish"));
+    if (d && ((d.tamanhos || []).length || (d.variantes || []).length || d.talheres || (d.opcoes || []).length || d.escolha || (d.adicionais || []).length)) openDish(d, t.closest(".dish"));
     else { flash(t.closest(".dish")); fly(t.closest(".dish").querySelector(".plate")); setQty(t.dataset.add, (cart[t.dataset.add] || 0) + 1); }
   }
   else if (t.id === "d-close") closeOverlay("d-overlay");
@@ -643,7 +644,7 @@ async function saveOrder() {
   const order = {
     nome: val("nome"), entrega,
     itens: lines.map(l => ({ nome: l.d.name, qtd: l.q, preco: l.d.price, ...(l.d.custom ? { detalhe: plateDetail(l.d) } : {}),
-      ...(l.d.cfg ? { ...(l.d.detail ? { detalhe: l.d.detail } : {}), ...(l.d.tamanho ? { tamanho: l.d.tamanho } : {}), ...(l.d.variante ? { variante: l.d.variante } : {}), ...(l.d.opcao ? { opcao: l.d.opcao } : {}), ...(l.d.escolhas.length ? { escolhas: l.d.escolhas } : {}),
+      ...(l.d.cfg ? { ...(l.d.detail ? { detalhe: l.d.detail } : {}), ...(l.d.tamanho ? { tamanho: l.d.tamanho } : {}), ...(l.d.variante ? { variante: l.d.variante } : {}), ...(l.d.talheres ? { talheres: true } : {}), ...(l.d.opcao ? { opcao: l.d.opcao } : {}), ...(l.d.escolhas.length ? { escolhas: l.d.escolhas } : {}),
         ...(l.d.adds.length ? { adicionais: l.d.adds.map(a => ({ nome: a.nome, qtd: a.qtd, valor: a.valor })) } : {}), ...(l.d.obs ? { obs: l.d.obs } : {}) } : {}) })),
     pratos: lines.reduce((n, l) => n + l.q, 0),
     total: Math.round(lines.reduce((s, l) => s + l.q * l.d.price, 0) * 100) / 100
@@ -676,7 +677,7 @@ function closeOverlay(id) {
 let dishSel = null;
 function openDish(d, card) {
   const sizes = d.tamanhos || [];
-  dishSel = { d, card, tamanho: sizes[0] || null, variante: (d.variantes || [])[0] || null, opcao: (d.opcoes || [])[0] || "", escolhas: d.escolha ? [d.escolha.itens[0]] : [], adds: {}, obs: "" };
+  dishSel = { d, card, tamanho: sizes[0] || null, variante: (d.variantes || [])[0] || null, talheres: false, opcao: (d.opcoes || [])[0] || "", escolhas: d.escolha ? [d.escolha.itens[0]] : [], adds: {}, obs: "" };
   document.getElementById("d-title").textContent = d.name;
   document.getElementById("d-desc").textContent = d.desc || "";
   const opts = d.opcoes || [], adds = d.adicionais || [];
@@ -698,6 +699,7 @@ function openDish(d, card) {
           <button type="button" data-dinc="${i}" aria-label="Mais ${esc(a.nome)}">+</button>
         </span>
       </div>`).join("")}</div>` : ""}
+    ${d.talheres ? `<div class="d-sec"><label class="d-opt"><input type="checkbox" name="d-tal"> <span class="d-opt-n">Adicionar talheres</span>${d.talheres.valor ? `<b class="d-opt-p">+ ${brl.format(d.talheres.valor)}</b>` : ""}</label></div>` : ""}
     <div class="d-sec"><h3>Comentários</h3><textarea class="d-obs" id="d-obs" maxlength="300" placeholder="Ex.: sem cebola, molho à parte…"></textarea></div>`;
   document.getElementById("d-msg").textContent = "";
   renderDish();
@@ -707,7 +709,7 @@ function openDish(d, card) {
 }
 function dishPrice() {
   const { d, adds, tamanho } = dishSel;
-  return (tamanho ? tamanho.valor : d.price) + (dishSel.variante ? dishSel.variante.valor : 0) + (d.adicionais || []).reduce((s, a, i) => s + (+a.valor || 0) * (adds[i] || 0), 0);
+  return (tamanho ? tamanho.valor : d.price) + (dishSel.variante ? dishSel.variante.valor : 0) + (dishSel.talheres ? d.talheres.valor : 0) + (d.adicionais || []).reduce((s, a, i) => s + (+a.valor || 0) * (adds[i] || 0), 0);
 }
 function renderDish() {
   const { d, adds } = dishSel;
@@ -721,6 +723,7 @@ function renderDish() {
   document.getElementById("d-add").disabled = closed;
 }
 document.getElementById("d-list").addEventListener("change", e => {
+  if (e.target.name === "d-tal") { dishSel.talheres = e.target.checked; renderDish(); }
   if (e.target.name === "d-var") { dishSel.variante = (dishSel.d.variantes || [])[+e.target.value] || null; renderDish(); }
   if (e.target.name === "d-size") { dishSel.tamanho = (dishSel.d.tamanhos || [])[+e.target.value] || null; renderDish(); }
   if (e.target.name === "d-esc") {
@@ -736,7 +739,7 @@ function addDish() {
   const { d, card } = dishSel;
   if ((d.opcoes || []).length && !dishSel.opcao) { document.getElementById("d-msg").textContent = "Escolha uma opção para continuar."; return; }
   if (d.escolha && d.escolha.modo === "varios" && !dishSel.escolhas.length) { document.getElementById("d-msg").textContent = "Marque pelo menos uma opção."; return; }
-  const cfg = { dish: d.id, ...(dishSel.tamanho ? { tamanho: { nome: dishSel.tamanho.nome, valor: dishSel.tamanho.valor } } : {}), ...(dishSel.variante ? { variante: { nome: dishSel.variante.nome, valor: dishSel.variante.valor } } : {}), opcao: dishSel.opcao, ...(dishSel.escolhas.length ? { escolhas: dishSel.escolhas } : {}),
+  const cfg = { dish: d.id, ...(dishSel.tamanho ? { tamanho: { nome: dishSel.tamanho.nome, valor: dishSel.tamanho.valor } } : {}), ...(dishSel.variante ? { variante: { nome: dishSel.variante.nome, valor: dishSel.variante.valor } } : {}), ...(dishSel.talheres ? { talheres: { valor: d.talheres.valor } } : {}), opcao: dishSel.opcao, ...(dishSel.escolhas.length ? { escolhas: dishSel.escolhas } : {}),
     adds: (d.adicionais || []).map((a, i) => ({ nome: a.nome, valor: +a.valor || 0, qtd: dishSel.adds[i] || 0 })).filter(a => a.qtd > 0),
     obs: document.getElementById("d-obs").value.trim() };
   // A mesma combinação soma na linha que já existe.
@@ -900,6 +903,7 @@ async function loadFromSupabase() {
     const mac = x => [+x.proteina, +x.gordura, +x.carboidrato];
     const items = rows.filter(x => x.tipo === "item").map(x => ({ id: x.id, cat: x.categoria, name: x.nome, desc: x.descricao || "", price: +x.preco, weight: x.porcao || "", foto: x.foto_url || "", macros: mac(x),
       tamanhos: Array.isArray(x.tamanhos) ? x.tamanhos.filter(t => t && t.nome).map(t => ({ nome: t.nome, valor: +t.valor || 0 })) : [],
+      talheres: x.talheres ? { valor: +x.talheres.valor || 0 } : null,
       variantes: Array.isArray(x.variantes) ? x.variantes.filter(v => v && v.nome).map(v => ({ nome: v.nome, valor: +v.valor || 0 })) : [],
       // Opções: "uma ou mais" ou "até X"; a lista simples antiga vale como "até 1".
       escolha: x.escolha && Array.isArray(x.escolha.itens) && x.escolha.itens.length ? { modo: x.escolha.modo === "ate" ? "ate" : "varios", max: Math.max(1, +x.escolha.max || 1), itens: x.escolha.itens.filter(Boolean) }

@@ -252,6 +252,8 @@ body.wide .wrap, body.wide .band-in { max-width: 1560px }
 .sect .flabel { font-family: var(--display); font-weight: 400; font-size: 19px; color: var(--gold-text) }
 .sect .flabel small, .sect .esc-hint { font-family: var(--body); font-size: 12px; color: var(--muted) }
 .esc-hint { color: var(--muted); font-size: 12px }
+.tal-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-height: 42px }
+#e-tal-v { width: 160px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font: inherit }
 #e-esc-f .esc-head select { width: auto; flex: none; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font: inherit; font-size: 14px }
 .cell-new:hover { border-color: var(--brand-gold); color: var(--ink) }
 .flabel small, label small { font-weight: 500; color: var(--muted) }
@@ -458,6 +460,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
         <div class="cells" id="e-esc"></div></div>
       <div class="field s6 sect" id="e-adds-f"><span class="flabel">Adicionais <small>o cliente escolhe a quantidade</small></span><div class="cells" id="e-adds"></div>
         <button type="button" class="cell-new" id="e-add-new">+ adicional</button></div>
+      <div class="field s6 sect" id="e-tal-f"><span class="flabel">Talheres <small>o cliente pode pedir talheres junto com o prato</small></span>
+        <div class="tal-row"><label class="check"><input type="checkbox" id="e-tal"> Adicionar talheres</label>
+        <input id="e-tal-v" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Preço (opcional)" aria-label="Preço dos talheres" hidden></div></div>
       <div class="field s3"><label for="e-preco">Preço (R$)</label><input id="e-preco" type="number" step="0.01" min="0" inputmode="decimal" required></div>
       <input id="e-ordem" type="hidden">
       <div class="field s3" style="justify-content: flex-end"><label class="check"><input type="checkbox" id="e-ativo"> Visível no site</label></div>
@@ -1020,12 +1025,13 @@ function openEdit(r, dup) {
   $("e-un").value = m ? m[2].toLowerCase() : (r?.categoria === "sucos" ? "ml" : "g");
   $("e-porcao-f").hidden = isItem;
   $("e-desc-f").hidden = !isItem; $("e-foto-f").hidden = false;
-  $("e-sizes-f").hidden = !isItem; $("e-var-f").hidden = !isItem; $("e-esc-f").hidden = !isItem; $("e-adds-f").hidden = !isItem;
+  $("e-sizes-f").hidden = !isItem; $("e-var-f").hidden = !isItem; $("e-tal-f").hidden = !isItem; $("e-esc-f").hidden = !isItem; $("e-adds-f").hidden = !isItem;
   renderAdds(Array.isArray(r?.adicionais) ? r.adicionais : []);
   $("e-desc").value = r?.descricao || "";
   $("e-preco").value = r ? +r.preco : "";
   renderSizes(isItem && Array.isArray(r?.tamanhos) ? r.tamanhos : []);
   renderVars(isItem && Array.isArray(r?.variantes) ? r.variantes : []);
+  $("e-tal").checked = !!(isItem && r?.talheres); $("e-tal-v").value = r?.talheres && r.talheres.valor != null ? +r.talheres.valor : ""; $("e-tal-v").hidden = !$("e-tal").checked;
   renderEsc(!isItem ? null : r?.escolha && Array.isArray(r.escolha.itens) ? r.escolha : Array.isArray(r?.opcoes) && r.opcoes.length ? { modo: "ate", max: 1, itens: r.opcoes } : null);
   $("e-ordem").value = r && !dup ? r.ordem : (Math.max(0, ...rows.map(x => x.ordem)) + 1);
   $("e-ativo").checked = r ? r.ativo : true;
@@ -1086,7 +1092,7 @@ $("edit").addEventListener("submit", async e => {
   const num = id => Math.max(0, parseFloat($(id).value) || 0);
   const data = { nome, categoria: cat, descricao: isItem ? ($("e-desc").value.trim() || null) : null,
     ...(isItem ? (editing ? {} : { porcao: null }) : { porcao: $("e-porcao").value.trim() || null }),
-    ...(isItem ? { tamanhos: sizes, variantes: readVars(), opcoes: [], escolha: readEsc(), adicionais: readAdds() } : {}),
+    ...(isItem ? { tamanhos: sizes, variantes: readVars(), talheres: $("e-tal").checked ? { valor: $("e-tal-v").value.trim() === "" ? null : Math.max(0, parseFloat($("e-tal-v").value) || 0) } : null, opcoes: [], escolha: readEsc(), adicionais: readAdds() } : {}),
     preco, ordem: editing && editing.categoria !== cat ? Math.max(0, ...rows.map(x => x.ordem)) + 1 : parseInt($("e-ordem").value, 10) || 0, ativo: $("e-ativo").checked, proteina: num("e-p"), gordura: num("e-g"), carboidrato: num("e-c") };
   $("e-save").disabled = true;
   try {
@@ -1130,6 +1136,8 @@ $("e-sizes").addEventListener("input", e => {
 });
 $("e-sizes").addEventListener("click", e => { if (e.target.classList.contains("cx")) { e.target.closest(".cell").remove(); syncPrice(); } });
 
+// Talheres: marcado, o site oferece talheres no pop-up; o preço é opcional.
+$("e-tal").addEventListener("change", () => { $("e-tal-v").hidden = !$("e-tal").checked; if ($("e-tal").checked) $("e-tal-v").focus(); });
 // Escolha: como os tamanhos (texto e valor), mas o valor é opcional e soma no preço do prato.
 function varCell(t) {
   const el = document.createElement("div"); el.className = t === null ? "cell new" : "cell";
@@ -1409,7 +1417,7 @@ function waLink(num, o) {
 // Detalhes do item na comanda: tamanho, escolha, opção, escolhas, adicionais e comentário em linhas separadas.
 const detalheHTML = i => {
   if (!i.detalhe) return "";
-  const lines = (i.tamanho || i.variante || i.opcao || i.escolhas || i.adicionais || i.obs) ? i.detalhe.split(" · ") : [i.detalhe];
+  const lines = (i.tamanho || i.variante || i.talheres || i.opcao || i.escolhas || i.adicionais || i.obs) ? i.detalhe.split(" · ") : [i.detalhe];
   return lines.map(l => `<small${/^Obs\.:/.test(l) ? ' class="tk-obs"' : ""}>${esc(l)}</small>`).join("");
 };
 function ticketHTML(o, fresh) {
